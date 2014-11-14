@@ -17,6 +17,10 @@
                 </TransformGroup>
             </Rectangle.RenderTransform>
         </Rectangle>
+        <Canvas Name="canvas" Margin="307,110,-4.333,-0.333">
+            <Line Name="line" Fill="LightGray" Height="123" Canvas.Left="56" Stroke="Black" Canvas.Top="22" Width="8"
+                  X1="10" Y1="100" X2="10" Y2="35" />
+        </Canvas>
         <Label Content="volume" HorizontalAlignment="Left" Margin="200,156,0,0" VerticalAlignment="Top"/>
         <Label Content="tempo" HorizontalAlignment="Left" Margin="307,156,0,0" VerticalAlignment="Top"/>
         <Rectangle Name="Volume" Fill="#00FF00" HorizontalAlignment="Left" Height="134" Margin="213,0,0,-0.333" Stroke="White" VerticalAlignment="Bottom" Width="25"/>

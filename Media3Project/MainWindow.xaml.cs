@@ -24,13 +24,13 @@ namespace Media3Project
         public MainWindow()
         {
             InitializeComponent();
+            InitialzeFigure();
 
             this.Loaded += MainWindow_Loaded;
         }
 
         void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            InitialzeFigure();
             // ここからキネクトを記述
         }
 
@@ -46,7 +46,9 @@ namespace Media3Project
             Tempo.RenderTransformOrigin = new Point(0.5, 1.0);
             // テンポ角の初期化
             Tempo.RenderTransform = new RotateTransform(0);
+            var Trans = new RotateTransform();
         }
+
         /// <summary>
         /// スライダーの動きに合わせてボリュームが動く
         /// </summary>
@@ -54,31 +56,41 @@ namespace Media3Project
         /// <param name="e"></param>
         public void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            VolumeChange(Volume.Height, TestSlider.Value * 12);
+            // 12 は調整用の係数
+            VolumeChange(TestSlider.Value * 12);
         }
+
+        /// <summary>
+        /// デバッグ用ボタン
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            Volume.Height = 100;
+            TempoChange(100.0);
+            canvas.Children.Add(line);
         }
+
         /// <summary>
         /// ボリュームのアニメーション
         /// </summary>
-        /// <param name="from"></param>　これ要らん
         /// <param name="to"></param>
-        public void VolumeChange(double from, double to)
+        public void VolumeChange(double to)
         {
             // ストーリボードクラスのインスタンス
             Storyboard storyboard = new Storyboard();
-            storyboard.FillBehavior = FillBehavior.HoldEnd; // これいる？
             // 線形補間アニメーション
-            DoubleAnimation animation = new DoubleAnimation { From = from, To = to, Duration = new Duration(TimeSpan.FromMilliseconds(100)) };
+            DoubleAnimation animation = new DoubleAnimation { To = to, Duration = new Duration(TimeSpan.FromMilliseconds(100)) };
             animation.RepeatBehavior = new RepeatBehavior(1);
             Storyboard.SetTarget(animation, Volume);
             Storyboard.SetTargetProperty(animation, new PropertyPath("Height"));
             storyboard.Children.Add(animation);
             storyboard.Begin();
         }
-
+        /// <summary>
+        /// テンポのアニメーション
+        /// </summary>
+        /// <param name="tick"></param>
         public void TempoChange(double tick)
         {
             Tempo.RenderTransform = new RotateTransform();
@@ -86,8 +98,9 @@ namespace Media3Project
             DoubleAnimation animation = new DoubleAnimation { From = 10, To = 100, Duration = new Duration(TimeSpan.FromMilliseconds(1000)) };
             animation.RepeatBehavior = new RepeatBehavior(1);
             Storyboard.SetTarget(animation, Tempo);
-            //Storyboard.SetTargetProperty(animation, new PropertyPath();
+            Storyboard.SetTargetProperty(animation, new PropertyPath(RotateTransform.AngleProperty));
+            storyboard.Children.Add(animation);
+            storyboard.Begin();
         }
-
     }
 }
