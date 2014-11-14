@@ -23,6 +23,14 @@ namespace Media3Project
         public MainWindow()
         {
             InitializeComponent();
+
+            this.Loaded += MainWindow_Loaded;
+        }
+
+        void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            // ここからキネクトを記述
+            throw new NotImplementedException();
         }
     }
 }
