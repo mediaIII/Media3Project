@@ -15,8 +15,7 @@ using System.Windows.Shapes;
 using System.Windows.Media.Animation;
 // Microsoft.Kinectの参照の追加
 using Microsoft.Kinect;
-
-
+using System.Threading;
 
 namespace Media3Project
 {
@@ -25,6 +24,19 @@ namespace Media3Project
     /// </summary>
     public partial class MainWindow : Window
     {
+        /// <summary>
+        /// テンポ棒の右端
+        /// </summary>
+        const double MinAngle=-25;
+        /// <summary>
+        /// テンポ棒の左端
+        /// </summary>
+        const double MaxAngle=25;
+        /// <summary>
+        /// tickの更新用
+        /// </summary>
+        double tickUpdated = 100000;
+
         int number = 0;
         float[] xarray = new float[100];
         float[] yarray = new float[100];
@@ -42,14 +54,15 @@ namespace Media3Project
         public MainWindow()
         {
             InitializeComponent();
+            InitialzeFigure();
 
             this.Loaded += MainWindow_Loaded;
         }
 
         void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-
-        // ここからキネクトを記述
+            InitialzeFigure();
+            // ここからキネクトを記述
 
                 InitializeComponent();
                 // Kinectが接続されているかどうかを確認する
@@ -266,6 +279,7 @@ namespace Media3Project
             // テンポ角の初期化
             Tempo.RenderTransform = new RotateTransform(0);
         }
+
         /// <summary>
         /// スライダーの動きに合わせてボリュームが動く
         /// </summary>
@@ -273,24 +287,30 @@ namespace Media3Project
         /// <param name="e"></param>
         public void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            VolumeChange(Volume.Height, TestSlider.Value * 12);
+            // 12 は調整用の係数
+            VolumeChange(TestSlider.Value * 12);
         }
+
+        /// <summary>
+        /// デバッグ用ボタン
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            Volume.Height = 100;
+            TempoChange(1000, MinAngle, MaxAngle);
         }
+
         /// <summary>
         /// ボリュームのアニメーション
         /// </summary>
-        /// <param name="from"></param>　これ要らん
         /// <param name="to"></param>
-        public void VolumeChange(double from, double to)
+        public void VolumeChange(double to)
         {
             // ストーリボードクラスのインスタンス
             Storyboard storyboard = new Storyboard();
-            storyboard.FillBehavior = FillBehavior.HoldEnd; // これいる？
             // 線形補間アニメーション
-            DoubleAnimation animation = new DoubleAnimation { From = from, To = to, Duration = new Duration(TimeSpan.FromMilliseconds(100)) };
+            DoubleAnimation animation = new DoubleAnimation { To = to, Duration = new Duration(TimeSpan.FromMilliseconds(100)) };
             animation.RepeatBehavior = new RepeatBehavior(1);
             Storyboard.SetTarget(animation, Volume);
             Storyboard.SetTargetProperty(animation, new PropertyPath("Height"));
@@ -298,15 +318,33 @@ namespace Media3Project
             storyboard.Begin();
         }
 
-        public void TempoChange(double tick)
+        /// <summary>
+        /// テンポのアニメーション(1往復)
+        /// </summary>
+        /// <param name="milliTime"></param>
+        /// <param name="StartAngle"></param>
+        /// <param name="FinishAngle"></param>
+        public void TempoChange(double milliTime, double StartAngle, double FinishAngle)
         {
-            Tempo.RenderTransform = new RotateTransform();
             Storyboard storyboard = new Storyboard();
-            DoubleAnimation animation = new DoubleAnimation { From = 10, To = 100, Duration = new Duration(TimeSpan.FromMilliseconds(1000)) };
+            DoubleAnimation animation = new DoubleAnimation { From = StartAngle, To = FinishAngle, Duration = new Duration(TimeSpan.FromMilliseconds(milliTime)) };
             animation.RepeatBehavior = new RepeatBehavior(1);
+            animation.AutoReverse = true;
+            storyboard.Completed += storyboard_Completed;
             Storyboard.SetTarget(animation, Tempo);
-            //Storyboard.SetTargetProperty(animation, new PropertyPath();
+            Storyboard.SetTargetProperty(animation, new PropertyPath("(Rectangle.RenderTransform).(RotateTransform.Angle)"));
+            storyboard.Children.Add(animation);
+            storyboard.Begin();
         }
 
+        void storyboard_Completed(object sender, EventArgs e)
+        {
+            TempoChange(tickUpdated, MinAngle, MaxAngle);
+        }
+
+        private void TempoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            tickUpdated = TempoSlider.Value;
+        }
     }
 }

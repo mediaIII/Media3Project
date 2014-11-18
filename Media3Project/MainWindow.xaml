@@ -1,13 +1,16 @@
 ﻿<Window x:Class="Media3Project.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="MainWindow" Height="350" Width="525">
-    <Grid>
-        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="166" Margin="168,155,0,-0.333" VerticalAlignment="Top" Width="232"/>
-        <Ellipse Name="Inst1" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="45" Margin="430,70,0,0" Stroke="Black" VerticalAlignment="Top" Width="45"/>
-        <Ellipse Name="Inst2" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="45" Margin="250,34,0,0" Stroke="Black" VerticalAlignment="Top" Width="45"/>
-        <Ellipse Name="Inst3" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="45" Margin="71,70,0,0" Stroke="Black" VerticalAlignment="Top" Width="45" RenderTransformOrigin="1.175,-0.356"/>
-        <Rectangle Name="Tempo" Fill="Black" HorizontalAlignment="Left" Height="124" Margin="330,0,0,0.667" Stroke="Black" VerticalAlignment="Bottom" Width="5"  RenderTransformOrigin="0.5,1.0">
+        Title="MainWindow" Height="500" Width="600">
+    <Grid VerticalAlignment="Bottom">
+        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="166" Margin="175,0,0,-0.333" VerticalAlignment="Bottom" Width="253">
+        </Border>
+        <Label Content="tempo" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="331,301,0,0"/>
+        <Label Content="volume" HorizontalAlignment="Left" Margin="200,300,0,0" VerticalAlignment="Top"/>
+        <Ellipse Name="Inst1" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="45" Margin="472,300,0,0" Stroke="Black" VerticalAlignment="Top" Width="45"/>
+        <Ellipse Name="Inst2" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="45" Margin="278,244,0,0" Stroke="Black" VerticalAlignment="Top" Width="45"/>
+        <Ellipse Name="Inst3" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="45" Margin="71,300,0,0" Stroke="Black" VerticalAlignment="Top" Width="45" RenderTransformOrigin="1.175,-0.356"/>
+        <Rectangle Name="Tempo" Fill="Black" HorizontalAlignment="Left" Height="120" Margin="345,0,0,0.667" Stroke="Black" VerticalAlignment="Bottom" Width="1"  RenderTransformOrigin="0.5,1.0">
             <Rectangle.RenderTransform>
                 <TransformGroup>
                     <ScaleTransform/>
@@ -17,11 +20,10 @@
                 </TransformGroup>
             </Rectangle.RenderTransform>
         </Rectangle>
-        <Label Content="volume" HorizontalAlignment="Left" Margin="200,156,0,0" VerticalAlignment="Top"/>
-        <Label Content="tempo" HorizontalAlignment="Left" Margin="307,156,0,0" VerticalAlignment="Top"/>
         <Rectangle Name="Volume" Fill="#00FF00" HorizontalAlignment="Left" Height="134" Margin="213,0,0,-0.333" Stroke="White" VerticalAlignment="Bottom" Width="25"/>
-        <Button Content="Button" HorizontalAlignment="Left" Margin="34,245,0,0" VerticalAlignment="Top" Width="75" Click="Button_Click"/>
-        <Slider Name="TestSlider" HorizontalAlignment="Left" Margin="34,187,0,0" VerticalAlignment="Top" Height="20" Width="82" ValueChanged="Slider_ValueChanged"
+        <Button Content="Button" HorizontalAlignment="Left" Margin="48,428,0,17.667" Width="75" Click="Button_Click"/>
+        <Slider Name="TestSlider" HorizontalAlignment="Left" Margin="41,368,0,0" VerticalAlignment="Top" Height="20" Width="82" ValueChanged="Slider_ValueChanged"
                Value="1" />
+        <Slider Name="TempoSlider" HorizontalAlignment="Left" Height="30" Margin="48,393,0,0" VerticalAlignment="Top" Width="75" Maximum="5000" Minimum="100" TickFrequency="100" ValueChanged="TempoSlider_ValueChanged"/>
     </Grid>
 </Window>
