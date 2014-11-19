@@ -49,7 +49,12 @@ namespace Media3Project
         float[] xf2 = new float[100];
         // フレーム数
         public int count = 0;
-        // 計算用の配列
+        // 計算用の[配列
+        int count3=0;
+        float [] xmean=new float[100];
+        float [] ymean=new float[100];
+        int number2=0;
+ 
 
         public MainWindow()
         {
@@ -145,93 +150,183 @@ namespace Media3Project
                     // 計算用のカウント数　フレーム数mod100
                     // int number = skeletonFrame.FrameNumber%100;
 
-                    if (skeletonFrame.FrameNumber % 3 == 0)
-                    {
-                        number++;
-                    }
+                    SkeletonPoint FramePoint;
 
-                    number = number % 100;
-                    // x,yの右手の座標
-                    xarray[number] = skeleton.Joints[JointType.HandRight].Position.X;
-                    yarray[number] = skeleton.Joints[JointType.HandRight].Position.Y;
-                    //float xfeature;
-                    //float yfeature;
+                    //if (skeletonFrame.FrameNumber % 3 == 0)
+                    //{
+                        
 
+                        number = number % 100;
 
+                        xarray[number] = skeleton.Joints[JointType.HandRight].Position.X;
+                        yarray[number] = skeleton.Joints[JointType.HandRight].Position.Y;
+                        // x,yの右手の座標
+                        FramePoint = skeleton.Joints[JointType.HandRight].Position;
 
-                    float volume;
-                    float tempo;
+                       
 
-                    // x,yの増加量
-                    if (number != 0)
-                    {
-                        float xgrad = xarray[number] - xarray[number - 1];
-                        float ygrad = yarray[number] - yarray[number - 1];
-                        grad[number] = xgrad / ygrad;
-                        //Console.WriteLine("xgrad:" + xgrad);
-                        //Console.WriteLine("ygrad:" + ygrad);
-                        Console.WriteLine("grad[number]:" + grad[number]);
-                        Console.WriteLine("grad[number-1]:" + grad[number - 1]);
+                        //float xfeature;
+                        //float yfeature;
 
-                        if (grad[number] * grad[number - 1] < 0)
-                        {   // 特徴点の検出
-                            //xfeature = xarray[number];
-                            //yfeature = yarray[number];
-                            //Console.WriteLine("xfeature:" + xfeature);
+                        float volume;
+                        float tempo;
 
-                            // 特徴点ごとのx,y座標
-                            xf[count2] = xarray[number];
-                            yf[count2] = yarray[number];
+                       
 
 
+                        
 
-                            // 特徴点間の距離による音量の計算
-                            volume = (float)Math.Sqrt((double)((xf[count2] - xf[count2 - 1]) * (xf[count2] - xf[count2 - 1]) +
-                                     (yf[count2] - yf[count2 - 1]) * (yf[count2] - yf[count2 - 1])));
-                            Console.WriteLine("volume:" + volume);
-                            Console.WriteLine("count2:" + count2);
+                        if (count3 > 2 && number>2)
+                        {
 
-                            xf2[count2] = skeletonFrame.FrameNumber;
-
-                            tempo = xf2[count2] - xf2[count2 - 1];
-                            Console.WriteLine("tempo:" + tempo);
-
-                            count2++;
-                            if (count2 > 98)
-                            {
-                                count2 = 1;
-                            }
+                            number2 = number2 % 100;
+                            xmean[number2] = (xarray[number] + xarray[number - 1] + xarray[number - 2]) / 3;
+                            ymean[number2] = (yarray[number] + yarray[number - 1] + yarray[number - 2]) / 3;
+                            number2++;
+                            count3 = 0;
                         }
 
-                    }
+                         count3++;
+                         number++;
+                        // x,yの増加量
+                        if (number != 0)
+                        {
+                            float xgrad = xarray[number] - xarray[number - 1];
+                            float ygrad = yarray[number] - yarray[number - 1];
+                            grad[number] = xgrad / ygrad;
+                            //Console.WriteLine("xgrad:" + xgrad);
+                            //Console.WriteLine("ygrad:" + ygrad);
+                            Console.WriteLine("grad[number]:" + grad[number]);
+                            Console.WriteLine("grad[number-1]:" + grad[number - 1]);
 
-                    if (count < 10)
-                    {
-                        count++;
-                    }
-                    else
-                    {
-                        count = 0;
-                    }
+                            if (grad[number] * grad[number - 1] < 0)
+                            {   // 特徴点の検出
+                                //xfeature = xarray[number];
+                                //yfeature = yarray[number];
+                                //Console.WriteLine("xfeature:" + xfeature);
+
+                                // 特徴点ごとのx,y座標
+                                xf[count2] = xarray[number];
+                                yf[count2] = yarray[number];
+
+                                // 青色のマーカー
+                                DrawEllipse(kinect, FramePoint, 1);
+
+                                // 特徴点間の距離による音量の計算
+                                volume = (float)Math.Sqrt((double)((xf[count2] - xf[count2 - 1]) * (xf[count2] - xf[count2 - 1]) +
+                                         (yf[count2] - yf[count2 - 1]) * (yf[count2] - yf[count2 - 1])));
+                                Console.WriteLine("volume:" + volume);
+                                Console.WriteLine("count2:" + count2);
+
+                                xf2[count2] = skeletonFrame.FrameNumber;
+
+                                tempo = xf2[count2] - xf2[count2 - 1];
+                                Console.WriteLine("tempo:" + tempo);
+
+                                count2++;
+                                if (count2 > 98)
+                                {
+                                    count2 = 1;
+                                }
+                            }
+                            else
+                            {
+
+                                // 赤色のマーカー
+                                DrawEllipse(kinect, FramePoint, 0);
+                            }
+
+                        }
+
+                        if (count < 10)
+                        {
+                            count++;
+                        }
+                        else
+                        {
+                            count = 0;
+                        }
+
+                    //}
 
                     Console.WriteLine("PublicCount:" + count);
 
-                    int body_part = 0;
+                  //  int body_part = 0;
                     if (skeleton.Joints[JointType.Head].Position.X < -0.2 && skeleton.Joints[JointType.Head].Position.Z < 1.7)
                     {
                         Console.WriteLine("左側検出");
-                        body_part = 1;
+                    //    body_part = 1;
                     }
                     else if (skeleton.Joints[JointType.Head].Position.X > 0.2 && skeleton.Joints[JointType.Head].Position.Z < 1.7)
                     {
                         Console.WriteLine("右側検出");
-                        body_part = 2;
+                   //     body_part = 2;
                     }
 
                 }
             }
-
         }
+
+       private void DrawEllipse(KinectSensor kinect, SkeletonPoint position, int flag)
+        {
+            const int R = 5;
+
+            // スケルトンの座標を、RGBカメラの座標に変換する
+            ColorImagePoint point = kinect.CoordinateMapper.MapSkeletonPointToColorPoint(position, kinect.ColorStream.Format);
+            //var point = new Point();
+            //// 座標を画面のサイズに変換する
+            //point = SkeletonPointToScreen(kinect, position);
+            point.X = (int)ScaleTo(point.X, kinect.ColorStream.FrameWidth, canvas1.Width);
+            point.Y = (int)ScaleTo(point.Y, kinect.ColorStream.FrameHeight, canvas1.Height);
+//            canvas1.Children.Clear();
+            // 円を描く
+            Ellipse ellipse = new Ellipse();
+            if (flag == 1)
+            {
+                ellipse.Fill = new SolidColorBrush(Colors.Blue);
+            }
+            else
+            {
+                ellipse.Fill = new SolidColorBrush(Colors.Red);
+            }
+            ellipse.Margin = new Thickness(point.X - R, point.Y - R, 0, 0);
+            ellipse.Width = R * 2;
+            ellipse.Height = R * 2;
+            canvas1.Children.Add(ellipse);
+
+
+            //canvas1.Children.Add(new Ellipse()
+            //{
+            //    Fill = new SolidColorBrush(Colors.Red),
+            //    Margin = new Thickness(point.X - R, point.Y - R, 0, 0),
+            //    Width = R * 2,
+            //    Height = R * 2,
+            //});
+            
+            //// Convert point to depth space.  
+            //// We are not using depth directly, but we do want the points in our 640x480 output resolution.
+            //DepthImagePoint depthPoint = this.sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
+            //return new Point(depthPoint.X, depthPoint.Y);
+     
+        }
+         /// <summary>
+         /// 
+         /// </summary>
+         /// <param name="kinect"></param>
+         /// <param name="skelpoint">FramePoint</param>
+         /// <returns></returns>
+        private Point SkeletonPointToScreen(KinectSensor kinect, SkeletonPoint skelpoint)
+        {
+            // Convert point to depth space.  
+            // We are not using depth directly, but we do want the points in our 640x480 output resolution.
+            DepthImagePoint depthPoint = kinect.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
+            return new Point(depthPoint.X, depthPoint.Y);
+        }
+        double ScaleTo(double value, double source, double dest)
+        {
+            return (value * dest) / source;
+        }
+        
 
 
         /// <summary>
@@ -343,6 +438,11 @@ namespace Media3Project
         private void TempoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             tickUpdated = TempoSlider.Value;
+        }
+
+        private void clear_Click(object sender, RoutedEventArgs e)
+        {
+            canvas1.Children.Clear();
         }
     }
 }
