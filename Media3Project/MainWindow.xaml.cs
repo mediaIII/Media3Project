@@ -18,6 +18,8 @@ using Microsoft.Kinect;
 
 
 
+
+
 namespace Media3Project
 {
     /// <summary>
@@ -49,10 +51,8 @@ namespace Media3Project
         void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
 
-        // ここからキネクトを記述
-
-                InitializeComponent();
-                // Kinectが接続されているかどうかを確認する
+            // ここからキネクトを記述
+            // Kinectが接続されているかどうかを確認する
             try
             {
 
@@ -69,7 +69,7 @@ namespace Media3Project
                 MessageBox.Show(ex.Message);
                 Close();
             }
-           }
+        }
 
         private void StartKinect(KinectSensor kinectSensor)
         {
@@ -172,6 +172,8 @@ namespace Media3Project
                             xf[count2] = xarray[number];
                             yf[count2] = yarray[number];
 
+
+
                             // 特徴点間の距離による音量の計算
                             volume = (float)Math.Sqrt((double)((xf[count2] - xf[count2 - 1]) * (xf[count2] - xf[count2 - 1]) +
                                      (yf[count2] - yf[count2 - 1]) * (yf[count2] - yf[count2 - 1])));
@@ -217,7 +219,9 @@ namespace Media3Project
 
                 }
             }
+
         }
+
 
         /// <summary>
         /// Kinectの動作を停止する
@@ -248,10 +252,6 @@ namespace Media3Project
         {
             StopKinect(KinectSensor.KinectSensors[0]);
         }
-    
-  
-
-
 
         /// <summary>
         /// 図形の初期化
@@ -278,6 +278,15 @@ namespace Media3Project
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             Volume.Height = 100;
+            Ellipse ellipse = new Ellipse();
+            Canvas.SetLeft(ellipse, 10);
+            Canvas.SetTop(ellipse, 50);
+            ellipse.Width = 20;
+            ellipse.Height = 20;
+            ellipse.Stroke = Brushes.Black;
+            ellipse.StrokeThickness = 3;
+            ellipse.Fill = Brushes.Red;
+            canvas.Children.Add(ellipse);
         }
         /// <summary>
         /// ボリュームのアニメーション
