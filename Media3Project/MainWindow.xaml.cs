@@ -179,35 +179,36 @@ namespace Media3Project
                         if (count3 > 2 && number>2)
                         {
 
-                            number2 = number2 % 100;
+              
                             xmean[number2] = (xarray[number] + xarray[number - 1] + xarray[number - 2]) / 3;
                             ymean[number2] = (yarray[number] + yarray[number - 1] + yarray[number - 2]) / 3;
                             number2++;
+                            number2 = number2 % 100;
                             count3 = 0;
                         }
 
                          count3++;
                          number++;
                         // x,yの増加量
-                        if (number != 0)
+                        if (number2 != 0)
                         {
-                            float xgrad = xarray[number] - xarray[number - 1];
-                            float ygrad = yarray[number] - yarray[number - 1];
-                            grad[number] = xgrad / ygrad;
+                            float xgrad = xmean[number2] - xmean[number2 - 1];
+                            float ygrad = ymean[number2] - ymean[number2 - 1];
+                            grad[number2] = xgrad / ygrad;
                             //Console.WriteLine("xgrad:" + xgrad);
                             //Console.WriteLine("ygrad:" + ygrad);
-                            Console.WriteLine("grad[number]:" + grad[number]);
-                            Console.WriteLine("grad[number-1]:" + grad[number - 1]);
+                           // Console.WriteLine("grad[number]:" + grad[number2]);
+                           // Console.WriteLine("grad[number-1]:" + grad[number - 1]);
 
-                            if (grad[number] * grad[number - 1] < 0)
+                            if (grad[number2] * grad[number2 - 1] < 0)
                             {   // 特徴点の検出
                                 //xfeature = xarray[number];
                                 //yfeature = yarray[number];
                                 //Console.WriteLine("xfeature:" + xfeature);
 
                                 // 特徴点ごとのx,y座標
-                                xf[count2] = xarray[number];
-                                yf[count2] = yarray[number];
+                                xf[count2] = xmean[number2];
+                                yf[count2] = ymean[number2];
 
                                 // 青色のマーカー
                                 DrawEllipse(kinect, FramePoint, 1);
