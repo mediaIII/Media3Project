@@ -36,24 +36,39 @@ namespace Media3Project
         /// tickの更新用
         /// </summary>
         double tickUpdated = 100000;
-
         int number = 0;
         float[] xarray = new float[100];
         float[] yarray = new float[100];
         float[] grad = new float[100];
-        // 特徴点のx,y座標
-        float[] xf = new float[100];
-        float[] yf = new float[100];
-        int count2 = 1;
-        // テンポ用配列
-        float[] xf2 = new float[100];
+        /// <summary>
+        /// 特徴点のx,y座標
+        /// </summary>
+        float[] featureX = new float[100];
+        float[] featureY = new float[100];
+        /// <summary>
+        /// 特徴点のカウント
+        /// </summary>
+        int featurecount = 1;
+        /// <summary>
+        /// テンポ用配列
+        /// </summary>
+        float[] tempoarray = new float[100];
         // フレーム数
-        public int count = 0;
+        public int flamenum = 0;
         // 計算用の[配列
-        int count3=0;
+        /// <summary>
+        /// 平均値計算用のカウント(3点取り出す)
+        /// </summary>
+        int meancount=0;
+        /// <summary>
+        /// 平均値のx,y座標
+        /// </summary>
         float [] xmean=new float[100];
         float [] ymean=new float[100];
-        int number2=0;
+        /// <summary>
+        /// 平均値の数
+        /// </summary>
+        int meannum=0;
  
 
         public MainWindow()
@@ -176,58 +191,58 @@ namespace Media3Project
 
                         
 
-                        if (count3 > 2 && number>2)
+                        if (meancount > 2 && number>2)
                         {
 
               
-                            xmean[number2] = (xarray[number] + xarray[number - 1] + xarray[number - 2]) / 3;
-                            ymean[number2] = (yarray[number] + yarray[number - 1] + yarray[number - 2]) / 3;
-                            number2++;
-                            number2 = number2 % 100;
-                            count3 = 0;
+                            xmean[meannum] = (xarray[number] + xarray[number - 1] + xarray[number - 2]) / 3;
+                            ymean[meannum] = (yarray[number] + yarray[number - 1] + yarray[number - 2]) / 3;
+                            meannum++;
+                            meannum = meannum % 100;
+                            meancount = 0;
                         }
 
-                         count3++;
+                         meancount++;
                          number++;
                         // x,yの増加量
-                        if (number2 != 0)
+                        if (meannum != 0)
                         {
-                            float xgrad = xmean[number2] - xmean[number2 - 1];
-                            float ygrad = ymean[number2] - ymean[number2 - 1];
-                            grad[number2] = xgrad / ygrad;
+                            float xgrad = xmean[meannum] - xmean[meannum - 1];
+                            float ygrad = ymean[meannum] - ymean[meannum - 1];
+                            grad[meannum] = xgrad / ygrad;
                             //Console.WriteLine("xgrad:" + xgrad);
                             //Console.WriteLine("ygrad:" + ygrad);
                            // Console.WriteLine("grad[number]:" + grad[number2]);
                            // Console.WriteLine("grad[number-1]:" + grad[number - 1]);
 
-                            if (grad[number2] * grad[number2 - 1] < 0)
+                            if (grad[meannum] * grad[meannum - 1] < 0)
                             {   // 特徴点の検出
                                 //xfeature = xarray[number];
                                 //yfeature = yarray[number];
                                 //Console.WriteLine("xfeature:" + xfeature);
 
                                 // 特徴点ごとのx,y座標
-                                xf[count2] = xmean[number2];
-                                yf[count2] = ymean[number2];
+                                featureX[featurecount] = xmean[meannum];
+                                featureY[featurecount] = ymean[meannum];
 
                                 // 青色のマーカー
                                 DrawEllipse(kinect, FramePoint, 1);
 
                                 // 特徴点間の距離による音量の計算
-                                volume = (float)Math.Sqrt((double)((xf[count2] - xf[count2 - 1]) * (xf[count2] - xf[count2 - 1]) +
-                                         (yf[count2] - yf[count2 - 1]) * (yf[count2] - yf[count2 - 1])));
+                                volume = (float)Math.Sqrt((double)((featureX[featurecount] - featureX[featurecount - 1]) * (featureX[featurecount] - featureX[featurecount - 1]) +
+                                         (featureY[featurecount] - featureY[featurecount - 1]) * (featureY[featurecount] - featureY[featurecount - 1])));
                                 Console.WriteLine("volume:" + volume);
-                                Console.WriteLine("count2:" + count2);
+                                Console.WriteLine("count2:" + featurecount);
 
-                                xf2[count2] = skeletonFrame.FrameNumber;
+                                tempoarray[featurecount] = skeletonFrame.FrameNumber;
 
-                                tempo = xf2[count2] - xf2[count2 - 1];
+                                tempo = tempoarray[featurecount] - tempoarray[featurecount - 1];
                                 Console.WriteLine("tempo:" + tempo);
 
-                                count2++;
-                                if (count2 > 98)
+                                featurecount++;
+                                if (featurecount > 98)
                                 {
-                                    count2 = 1;
+                                    featurecount = 1;
                                 }
                             }
                             else
@@ -239,18 +254,18 @@ namespace Media3Project
 
                         }
 
-                        if (count < 10)
+                        if (flamenum < 10)
                         {
-                            count++;
+                            flamenum++;
                         }
                         else
                         {
-                            count = 0;
+                            flamenum = 0;
                         }
 
                     //}
 
-                    Console.WriteLine("PublicCount:" + count);
+                    Console.WriteLine("PublicCount:" + flamenum);
 
                   //  int body_part = 0;
                     if (skeleton.Joints[JointType.Head].Position.X < -0.2 && skeleton.Joints[JointType.Head].Position.Z < 1.7)
