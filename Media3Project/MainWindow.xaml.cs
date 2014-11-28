@@ -16,6 +16,7 @@ using System.Windows.Media.Animation;
 // Microsoft.Kinectの参照の追加
 using Microsoft.Kinect;
 using System.Threading;
+using System.Linq;
 
 namespace Media3Project
 {
@@ -23,7 +24,7 @@ namespace Media3Project
     /// MainWindow.xaml の相互作用ロジック
     /// </summary>
     public partial class MainWindow : Window
-    {
+    {   
         /// <summary>
         /// テンポ棒の右端
         /// </summary>
@@ -36,7 +37,8 @@ namespace Media3Project
         /// tickの更新用
         /// </summary>
         double tickUpdated = 100000;
-        int number = 2;
+        const double Degree = 60;
+        int number = 1;
         float[] xarray = new float[100];
         float[] yarray = new float[100];
         float[] grad = new float[100];
@@ -55,7 +57,7 @@ namespace Media3Project
         float[] tempoarray = new float[100];
         // フレーム数
         public int flamenum = 0;
-        // 計算用の[配列
+        // 計算用の配列
         /// <summary>
         /// 平均値計算用のカウント(3点取り出す)
         /// </summary>
@@ -65,6 +67,9 @@ namespace Media3Project
         /// </summary>
         float[] xmean = new float[100];
         float[] ymean = new float[100];
+        float[] Volume_array = new float[100];
+        float Volume_max;
+        float frame;
         /// <summary>
         /// 平均値の数
         /// </summary>
@@ -157,10 +162,6 @@ namespace Media3Project
 
                     // ジョイントの座標の表示
 
-                    //Console.WriteLine("HeadPoint(X,Y):" + skeleton.Joints[JointType.Head].Position.X + "," + skeleton.Joints[JointType.Head].Position.Y);
-                    //Console.WriteLine("RightHandPoint(X,Y):" + skeleton.Joints[JointType.HandRight].Position.X + "," + skeleton.Joints[JointType.HandRight].Position.Y);
-                    //Console.WriteLine("HeadPoint(Z):" + skeleton.Joints[JointType.Head].Position.Z);
-
                     //１秒に１５フレーム表示
                     Console.WriteLine("FrameNumber:" + skeletonFrame.FrameNumber);
 
@@ -172,7 +173,7 @@ namespace Media3Project
                     //if (skeletonFrame.FrameNumber % 3 == 0)
                     //{
 
-
+                    number++;
                     number = number % 100;
 
                     xarray[number] = skeleton.Joints[JointType.HandRight].Position.X;
@@ -198,7 +199,6 @@ namespace Media3Project
 
                     if (meancount > 2 && number > 2)
                     {
-
                         xmean[meannum] = (xarray[number] + xarray[number - 1] + xarray[number - 2]) / 3;
                         ymean[meannum] = (yarray[number] + yarray[number - 1] + yarray[number - 2]) / 3;
                         meannum++;
@@ -207,46 +207,55 @@ namespace Media3Project
                     }
 
                     meancount++;
-                    number++;
 
+                     Volume_array[number]=yarray[number];
+
+                     Volume_max = Volume_array.Max();
+                        
+                    
 
                     // x,yの増加量
-                    if (meannum != 0)
+                    if (number != 0)
                     {
-                        float xgrad = xmean[meannum] - xmean[meannum - 1];
-                        float ygrad = ymean[meannum] - ymean[meannum - 1];
+                        float xgrad = xarray[number] - xarray[number - 1];
+                        float ygrad = yarray[number] - yarray[number - 1];
                         grad[meannum] = xgrad / ygrad;
 
-                        //Console.WriteLine("xgrad:" + xgrad);
-                        //Console.WriteLine("ygrad:" + ygrad);
-                        // Console.WriteLine("grad[number]:" + grad[number2]);
-                        // Console.WriteLine("grad[number-1]:" + grad[number - 1]);
-
-
                         // 特徴点の検出
-                        if (angleBetween > 60)
-                        {   
+                        if (angleBetween > Degree && frame+10 < skeletonFrame.FrameNumber)
+                        {   frame=skeletonFrame.FrameNumber;
                             //xfeature = xarray[number];
                             //yfeature = yarray[number];
                             //Console.WriteLine("xfeature:" + xfeature);
 
                             // 特徴点ごとのx,y座標
-                            featureX[featurecount] = xmean[meannum];
-                            featureY[featurecount] = ymean[meannum];
+                            featureX[featurecount] = xarray[number];
+                            featureY[featurecount] = yarray[number];
 
                             // 青色のマーカー
                             DrawEllipse(kinect, FramePoint, 1);
 
                             // 特徴点間の距離による音量の計算
-                            volume = (float)Math.Sqrt((double)((featureX[featurecount] - featureX[featurecount - 1]) * (featureX[featurecount] - featureX[featurecount - 1]) +
-                                     (featureY[featurecount] - featureY[featurecount - 1]) * (featureY[featurecount] - featureY[featurecount - 1])));
+                            //volume = (float)Math.Sqrt((double)((xarray[number] - xarray[number - 1]) * (xarray[number] - xarray[number-1]) +
+                            //         (yarray[number] - yarray[number - 1]) * (yarray[number] - yarray[number-1])));
+
+                            volume = Volume_max;
+                       
+                            volume = volume * 500;
+
                             Console.WriteLine("volume:" + volume);
-                            Console.WriteLine("count2:" + featurecount);
+
+                            VolumeChange((double)volume);
+
+                        
+                      
 
                             tempoarray[featurecount] = skeletonFrame.FrameNumber;
 
                             tempo = tempoarray[featurecount] - tempoarray[featurecount - 1];
                             Console.WriteLine("tempo:" + tempo);
+                            tickUpdated = tempo;
+                            
 
                             featurecount++;
                             if (featurecount > 98)
@@ -276,13 +285,17 @@ namespace Media3Project
 
                     Console.WriteLine("PublicCount:" + flamenum);
 
+
+
+
+
                     //  int body_part = 0;
-                    if (skeleton.Joints[JointType.Head].Position.X < -0.2 && skeleton.Joints[JointType.Head].Position.Z < 1.7)
+                    if (skeleton.Joints[JointType.Head].Position.X < skeleton.Joints[JointType.HipCenter].Position.X - 0.1 && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
                         Console.WriteLine("左側検出");
                         //    body_part = 1;
                     }
-                    else if (skeleton.Joints[JointType.Head].Position.X > 0.2 && skeleton.Joints[JointType.Head].Position.Z < 1.7)
+                    else if (skeleton.Joints[JointType.Head].Position.X > skeleton.Joints[JointType.HipCenter].Position.X + 0.1 && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
                         Console.WriteLine("右側検出");
                         //     body_part = 2;
@@ -419,6 +432,7 @@ namespace Media3Project
             TempoChange(1000, MinAngle, MaxAngle);
         }
 
+
         /// <summary>
         /// ボリュームのアニメーション
         /// </summary>
@@ -449,6 +463,7 @@ namespace Media3Project
             animation.RepeatBehavior = new RepeatBehavior(1);
             animation.AutoReverse = true;
             storyboard.Completed += storyboard_Completed;
+
             Storyboard.SetTarget(animation, Tempo);
             Storyboard.SetTargetProperty(animation, new PropertyPath("(Rectangle.RenderTransform).(RotateTransform.Angle)"));
             storyboard.Children.Add(animation);
