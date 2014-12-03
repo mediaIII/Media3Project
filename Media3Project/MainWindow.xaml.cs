@@ -78,6 +78,26 @@ namespace Media3Project
         /// 2直線の角度
         /// </summary>
         float angleBetween;
+        /// <summary>
+        ///  特徴点の５フレーム以内は特徴点を検出しない
+        /// </summary>
+        int FrameDetect = 5;
+        /// <summary>
+        /// 左側検出
+        /// </summary>
+        int leftfrag = 0;
+        /// <summary>
+        /// 右側検出
+        /// </summary>
+        int rightfrag = 0;
+        /// <summary>
+        /// 
+        /// </summary>
+        int InitialCount = 0;
+        /// <summary>
+        /// 初期位置を判定するときの誤差
+        /// </summary>
+        float BaseDirection;
         public MainWindow()
         {
             InitializeComponent();
@@ -181,6 +201,12 @@ namespace Media3Project
                     // x,yの右手の座標
                     FramePoint = skeleton.Joints[JointType.HandRight].Position;
 
+                    if (Math.Abs(xarray[number]-xarray[number-1])<BaseDirection)
+                    {
+                        InitialCount += 1;
+                    }
+
+
                     float volume;
                     float tempo;
                     // 2直線の角度を求める
@@ -222,7 +248,7 @@ namespace Media3Project
                         grad[meannum] = xgrad / ygrad;
 
                         // 特徴点の検出
-                        if (angleBetween > Degree && frame+10 < skeletonFrame.FrameNumber)
+                        if (angleBetween > Degree && frame+FrameDetect < skeletonFrame.FrameNumber)
                         {   frame=skeletonFrame.FrameNumber;
                             //xfeature = xarray[number];
                             //yfeature = yarray[number];
@@ -247,15 +273,20 @@ namespace Media3Project
 
                             VolumeChange((double)volume);
 
-                        
-                      
-
                             tempoarray[featurecount] = skeletonFrame.FrameNumber;
-
-                            tempo = tempoarray[featurecount] - tempoarray[featurecount - 1];
+                            if (featurecount % 6 == 0 || featurecount % 6 == 2) { 
+                            }
+                            else if(featurecount % 6 == 1 || featurecount % 6 == 3){ 
+                            tempo = 2*(tempoarray[featurecount] - tempoarray[featurecount - 1]);
                             Console.WriteLine("tempo:" + tempo);
                             tickUpdated = tempo;
-                            
+                            }
+                            else
+                            {
+                                tempo = tempoarray[featurecount] - tempoarray[featurecount - 1];
+                                Console.WriteLine("tempo:" + tempo);
+                                tickUpdated = tempo;
+                            }
 
                             featurecount++;
                             if (featurecount > 98)
@@ -289,18 +320,24 @@ namespace Media3Project
 
 
 
-                    //  int body_part = 0;
+                     // int body_part = 0;
                     if (skeleton.Joints[JointType.Head].Position.X < skeleton.Joints[JointType.HipCenter].Position.X - 0.1 && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
                         Console.WriteLine("左側検出");
                         //    body_part = 1;
+                        leftfrag = 1;
                     }
                     else if (skeleton.Joints[JointType.Head].Position.X > skeleton.Joints[JointType.HipCenter].Position.X + 0.1 && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
                         Console.WriteLine("右側検出");
                         //     body_part = 2;
+                        rightfrag = 1;
                     }
-
+                    else
+                    {
+                        leftfrag = 0;
+                        rightfrag = 0;
+                    }
                 }
             }
         }
