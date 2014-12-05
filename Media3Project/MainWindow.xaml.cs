@@ -13,7 +13,6 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Media.Animation;
-// Microsoft.Kinectの参照の追加
 using Microsoft.Kinect;
 using System.Threading;
 
@@ -23,7 +22,7 @@ namespace Media3Project
     /// MainWindow.xaml の相互作用ロジック
     /// </summary>
     public partial class MainWindow : Window
-    {   
+    {
         /// <summary>
         /// テンポ棒の右端
         /// </summary>
@@ -100,19 +99,17 @@ namespace Media3Project
         public MainWindow()
         {
             InitializeComponent();
-            InitialzeFigure();
-
             this.Loaded += MainWindow_Loaded;
         }
 
         void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            // 図の初期化
             InitialzeFigure();
             // ここからキネクトを記述
             // Kinectが接続されているかどうかを確認する
             try
             {
-
                 if (KinectSensor.KinectSensors.Count == 0)
                 {
                     throw new Exception("Kinectを接続してください");
@@ -134,7 +131,6 @@ namespace Media3Project
             kinectSensor.SkeletonFrameReady += new EventHandler<SkeletonFrameReadyEventArgs>(kinectSensor_SkeletonFrameReady);
             kinectSensor.Start();
         }
-
 
         /// <summary>
         /// スケルトンフレームの準備
@@ -172,13 +168,6 @@ namespace Media3Project
                 // スケルトンがトラッキング状態(デフォルトモード)の場合は、ジョイントを描画する
                 if (skeleton.TrackingState == SkeletonTrackingState.Tracked)
                 {
-
-                    //// ジョイントがトラッキングされていなければ次へ  <--- トラッキングの判定用に使えそう
-                    //if (joint.TrackingState == JointTrackingState.NotTracked)
-                    //{
-                    //    continue;
-                    //}
-
                     // ジョイントの座標の表示
 
                     //１秒に１５フレーム表示
@@ -189,9 +178,6 @@ namespace Media3Project
 
                     SkeletonPoint FramePoint;
 
-                    //if (skeletonFrame.FrameNumber % 3 == 0)
-                    //{
-
                     number++;
                     number = number % 100;
 
@@ -200,11 +186,10 @@ namespace Media3Project
                     // x,yの右手の座標
                     FramePoint = skeleton.Joints[JointType.HandRight].Position;
 
-                    if (Math.Abs(xarray[number]-xarray[number-1])<BaseDirection)
+                    if (Math.Abs(xarray[number] - xarray[number - 1]) < BaseDirection)
                     {
                         InitialCount += 1;
                     }
-
 
                     float volume;
                     float tempo;
@@ -219,7 +204,7 @@ namespace Media3Project
                     }
                     else
                     {
-
+                        // ここはなんか記述？
                     }
 
                     if (meancount > 2 && number > 2)
@@ -233,11 +218,11 @@ namespace Media3Project
 
                     meancount++;
 
-                     Volume_array[number]=yarray[number];
+                    Volume_array[number] = yarray[number];
 
-                     Volume_max = Volume_array.Max();
-                        
-                    
+                    Volume_max = Volume_array.Max();
+
+
 
                     // x,yの増加量
                     if (number != 0)
@@ -247,8 +232,9 @@ namespace Media3Project
                         grad[meannum] = xgrad / ygrad;
 
                         // 特徴点の検出
-                        if (angleBetween > Degree && frame+FrameDetect < skeletonFrame.FrameNumber)
-                        {   frame=skeletonFrame.FrameNumber;
+                        if (angleBetween > Degree && frame + FrameDetect < skeletonFrame.FrameNumber)
+                        {
+                            frame = skeletonFrame.FrameNumber;
                             //xfeature = xarray[number];
                             //yfeature = yarray[number];
                             //Console.WriteLine("xfeature:" + xfeature);
@@ -265,7 +251,7 @@ namespace Media3Project
                             //         (yarray[number] - yarray[number - 1]) * (yarray[number] - yarray[number-1])));
 
                             volume = Volume_max;
-                       
+
                             volume = volume * 500;
 
                             Console.WriteLine("volume:" + volume);
@@ -273,12 +259,14 @@ namespace Media3Project
                             VolumeChange((double)volume);
 
                             tempoarray[featurecount] = skeletonFrame.FrameNumber;
-                            if (featurecount % 6 == 0 || featurecount % 6 == 2) { 
+                            if (featurecount % 6 == 0 || featurecount % 6 == 2)
+                            {
                             }
-                            else if(featurecount % 6 == 1 || featurecount % 6 == 3){ 
-                            tempo = 2*(tempoarray[featurecount] - tempoarray[featurecount - 1]);
-                            Console.WriteLine("tempo:" + tempo);
-                            tickUpdated = tempo;
+                            else if (featurecount % 6 == 1 || featurecount % 6 == 3)
+                            {
+                                tempo = 2 * (tempoarray[featurecount] - tempoarray[featurecount - 1]);
+                                Console.WriteLine("tempo:" + tempo);
+                                tickUpdated = tempo;
                             }
                             else
                             {
@@ -295,7 +283,6 @@ namespace Media3Project
                         }
                         else
                         {
-
                             // 赤色のマーカー
                             DrawEllipse(kinect, FramePoint, 0);
                         }
@@ -310,16 +297,9 @@ namespace Media3Project
                     {
                         flamenum = 0;
                     }
-
-                    //}
-
                     Console.WriteLine("PublicCount:" + flamenum);
 
-
-
-
-
-                     // int body_part = 0;
+                    // int body_part = 0;
                     if (skeleton.Joints[JointType.Head].Position.X < skeleton.Joints[JointType.HipCenter].Position.X - 0.1 && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
                         Console.WriteLine("左側検出");
@@ -367,41 +347,12 @@ namespace Media3Project
             ellipse.Width = R * 2;
             ellipse.Height = R * 2;
             canvas1.Children.Add(ellipse);
-
-
-            //canvas1.Children.Add(new Ellipse()
-            //{
-            //    Fill = new SolidColorBrush(Colors.Red),
-            //    Margin = new Thickness(point.X - R, point.Y - R, 0, 0),
-            //    Width = R * 2,
-            //    Height = R * 2,
-            //});
-
-            //// Convert point to depth space.  
-            //// We are not using depth directly, but we do want the points in our 640x480 output resolution.
-            //DepthImagePoint depthPoint = this.sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
-            //return new Point(depthPoint.X, depthPoint.Y);
-
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="kinect"></param>
-        /// <param name="skelpoint">FramePoint</param>
-        /// <returns></returns>
-        private Point SkeletonPointToScreen(KinectSensor kinect, SkeletonPoint skelpoint)
-        {
-            // Convert point to depth space.  
-            // We are not using depth directly, but we do want the points in our 640x480 output resolution.
-            DepthImagePoint depthPoint = kinect.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
-            return new Point(depthPoint.X, depthPoint.Y);
-        }
+
         double ScaleTo(double value, double source, double dest)
         {
             return (value * dest) / source;
         }
-
-
 
         /// <summary>
         /// Kinectの動作を停止する
@@ -415,7 +366,6 @@ namespace Media3Project
                 {
                     // スケルトンのフレーム更新イベントを削除する
                     kinect.SkeletonFrameReady -= kinectSensor_SkeletonFrameReady;
-
                     // Kinectの停止と、ネイティブリソースを解放する
                     kinect.Stop();
                     kinect.Dispose();
@@ -445,6 +395,8 @@ namespace Media3Project
             Tempo.RenderTransformOrigin = new Point(0.5, 1.0);
             // テンポ角の初期化
             Tempo.RenderTransform = new RotateTransform(0);
+            // テンポの動作開始
+            fromRighttoLeft(tickUpdated, MinAngle, MaxAngle);
         }
 
         /// <summary>
@@ -467,7 +419,6 @@ namespace Media3Project
         {
             fromRighttoLeft(1000, MinAngle, MaxAngle);
         }
-
 
         /// <summary>
         /// ボリュームのアニメーション
