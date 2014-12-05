@@ -16,7 +16,6 @@ using System.Windows.Media.Animation;
 // Microsoft.Kinectの参照の追加
 using Microsoft.Kinect;
 using System.Threading;
-using System.Linq;
 
 namespace Media3Project
 {
