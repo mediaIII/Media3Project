@@ -13,10 +13,8 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Windows.Media.Animation;
-// Microsoft.Kinectの参照の追加
 using Microsoft.Kinect;
 using System.Threading;
-using System.Linq;
 
 namespace Media3Project
 {
@@ -100,19 +98,17 @@ namespace Media3Project
         public MainWindow()
         {
             InitializeComponent();
-            InitialzeFigure();
-
             this.Loaded += MainWindow_Loaded;
         }
 
         void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
+            // 図の初期化
             InitialzeFigure();
             // ここからキネクトを記述
             // Kinectが接続されているかどうかを確認する
             try
             {
-
                 if (KinectSensor.KinectSensors.Count == 0)
                 {
                     throw new Exception("Kinectを接続してください");
@@ -134,7 +130,6 @@ namespace Media3Project
             kinectSensor.SkeletonFrameReady += new EventHandler<SkeletonFrameReadyEventArgs>(kinectSensor_SkeletonFrameReady);
             kinectSensor.Start();
         }
-
 
         /// <summary>
         /// スケルトンフレームの準備
@@ -172,13 +167,6 @@ namespace Media3Project
                 // スケルトンがトラッキング状態(デフォルトモード)の場合は、ジョイントを描画する
                 if (skeleton.TrackingState == SkeletonTrackingState.Tracked)
                 {
-
-                    //// ジョイントがトラッキングされていなければ次へ  <--- トラッキングの判定用に使えそう
-                    //if (joint.TrackingState == JointTrackingState.NotTracked)
-                    //{
-                    //    continue;
-                    //}
-
                     // ジョイントの座標の表示
 
                     //１秒に１５フレーム表示
@@ -188,9 +176,6 @@ namespace Media3Project
                     // int number = skeletonFrame.FrameNumber%100;
 
                     SkeletonPoint FramePoint;
-
-                    //if (skeletonFrame.FrameNumber % 3 == 0)
-                    //{
 
                     number++;
                     number = number % 100;
@@ -205,7 +190,6 @@ namespace Media3Project
              //           InitialCount += 1;
                //     }
 
-
                     float volume;
                     float tempo;
                     // 2直線の角度を求める
@@ -219,7 +203,7 @@ namespace Media3Project
                     }
                     else
                     {
-
+                        // ここはなんか記述？
                     }
 
                     if (meancount > 2 && number > 2)
@@ -233,7 +217,7 @@ namespace Media3Project
 
                     meancount++;
                      Volume_max = yarray.Max();
-                        
+
                     // x,yの増加量
                     if (number != 0)
                     {
@@ -242,8 +226,9 @@ namespace Media3Project
                         //grad[meannum] = xgrad / ygrad;
 
                         // 特徴点の検出
-                        if (angleBetween > Degree && frame+FrameDetect < skeletonFrame.FrameNumber)
-                        {   frame=skeletonFrame.FrameNumber;
+                        if (angleBetween > Degree && frame + FrameDetect < skeletonFrame.FrameNumber)
+                        {
+                            frame = skeletonFrame.FrameNumber;
                             //xfeature = xarray[number];
                             //yfeature = yarray[number];
                             //Console.WriteLine("xfeature:" + xfeature);
@@ -268,7 +253,8 @@ namespace Media3Project
                             VolumeChange((double)volume);
 
                             tempoarray[featurecount] = skeletonFrame.FrameNumber;
-                            if (featurecount % 6 == 0 || featurecount % 6 == 2) { 
+                            if (featurecount % 6 == 0 || featurecount % 6 == 2)
+                            {
                             }
                             else if(featurecount % 6 == 1 || featurecount % 6 == 3){ 
                             tempo = 2*(tempoarray[featurecount] - tempoarray[featurecount - 1]);
@@ -295,7 +281,6 @@ namespace Media3Project
                         }
                         else
                         {
-
                             // 赤色のマーカー
                             DrawEllipse(kinect, FramePoint, 0);
                         }
@@ -314,10 +299,6 @@ namespace Media3Project
                     //}
 
                    // Console.WriteLine("PublicCount:" + flamenum);
-
-
-
-
 
                      // int body_part = 0;
                     if (skeleton.Joints[JointType.Head].Position.X < skeleton.Joints[JointType.HipCenter].Position.X - 0.1 && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
@@ -367,41 +348,12 @@ namespace Media3Project
             ellipse.Width = R * 2;
             ellipse.Height = R * 2;
             canvas1.Children.Add(ellipse);
-
-
-            //canvas1.Children.Add(new Ellipse()
-            //{
-            //    Fill = new SolidColorBrush(Colors.Red),
-            //    Margin = new Thickness(point.X - R, point.Y - R, 0, 0),
-            //    Width = R * 2,
-            //    Height = R * 2,
-            //});
-
-            //// Convert point to depth space.  
-            //// We are not using depth directly, but we do want the points in our 640x480 output resolution.
-            //DepthImagePoint depthPoint = this.sensor.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
-            //return new Point(depthPoint.X, depthPoint.Y);
-
         }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="kinect"></param>
-        /// <param name="skelpoint">FramePoint</param>
-        /// <returns></returns>
-        private Point SkeletonPointToScreen(KinectSensor kinect, SkeletonPoint skelpoint)
-        {
-            // Convert point to depth space.  
-            // We are not using depth directly, but we do want the points in our 640x480 output resolution.
-            DepthImagePoint depthPoint = kinect.CoordinateMapper.MapSkeletonPointToDepthPoint(skelpoint, DepthImageFormat.Resolution640x480Fps30);
-            return new Point(depthPoint.X, depthPoint.Y);
-        }
+
         double ScaleTo(double value, double source, double dest)
         {
             return (value * dest) / source;
         }
-
-
 
         /// <summary>
         /// Kinectの動作を停止する
@@ -415,7 +367,6 @@ namespace Media3Project
                 {
                     // スケルトンのフレーム更新イベントを削除する
                     kinect.SkeletonFrameReady -= kinectSensor_SkeletonFrameReady;
-
                     // Kinectの停止と、ネイティブリソースを解放する
                     kinect.Stop();
                     kinect.Dispose();
@@ -445,6 +396,8 @@ namespace Media3Project
             Tempo.RenderTransformOrigin = new Point(0.5, 1.0);
             // テンポ角の初期化
             Tempo.RenderTransform = new RotateTransform(0);
+            // テンポの動作開始
+            fromRighttoLeft(tickUpdated, MinAngle, MaxAngle);
         }
 
         /// <summary>
@@ -465,9 +418,8 @@ namespace Media3Project
         /// <param name="e"></param>
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            TempoChange(1000, MinAngle, MaxAngle);
+            fromRighttoLeft(1000, MinAngle, MaxAngle);
         }
-
 
         /// <summary>
         /// ボリュームのアニメーション
@@ -487,28 +439,59 @@ namespace Media3Project
         }
 
         /// <summary>
-        /// テンポのアニメーション(1往復)
+        /// テンポのアニメーション(反時計回り方向)
         /// </summary>
-        /// <param name="milliTime"></param>
-        /// <param name="StartAngle"></param>
-        /// <param name="FinishAngle"></param>
-        public void TempoChange(double milliTime, double StartAngle, double FinishAngle)
+        /// <param name="milliTime">RightからLeftまでの移動時間(msec)</param>
+        /// <param name="Right"></param>
+        /// <param name="Left"></param>
+        public void fromRighttoLeft(double milliTime, double Right, double Left)
         {
             Storyboard storyboard = new Storyboard();
-            DoubleAnimation animation = new DoubleAnimation { From = StartAngle, To = FinishAngle, Duration = new Duration(TimeSpan.FromMilliseconds(milliTime)) };
+            DoubleAnimation animation = new DoubleAnimation { From = Right, To = Left, Duration = new Duration(TimeSpan.FromMilliseconds(milliTime)) };
             animation.RepeatBehavior = new RepeatBehavior(1);
-            animation.AutoReverse = true;
-            storyboard.Completed += storyboard_Completed;
-
+            storyboard.Completed += byLeft;
             Storyboard.SetTarget(animation, Tempo);
             Storyboard.SetTargetProperty(animation, new PropertyPath("(Rectangle.RenderTransform).(RotateTransform.Angle)"));
             storyboard.Children.Add(animation);
             storyboard.Begin();
         }
 
-        void storyboard_Completed(object sender, EventArgs e)
+        /// <summary>
+        /// 到達時に時計回り方向のアニメーションの実行
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void byLeft(object sender, EventArgs e)
         {
-            TempoChange(tickUpdated, MinAngle, MaxAngle);
+            fromLefttoRight(tickUpdated, MaxAngle, MinAngle);
+        }
+
+        /// <summary>
+        /// テンポのアニメーション(時計回り方向)
+        /// </summary>
+        /// <param name="milliTime">LeftからRightまでの移動時間(msec)</param>
+        /// <param name="Left"></param>
+        /// <param name="Right"></param>
+        public void fromLefttoRight(double milliTime, double Left, double Right)
+        {
+            Storyboard storyboard = new Storyboard();
+            DoubleAnimation animation = new DoubleAnimation { From = Left, To = Right, Duration = new Duration(TimeSpan.FromMilliseconds(milliTime)) };
+            animation.RepeatBehavior = new RepeatBehavior(1);
+            storyboard.Completed += byRight;
+            Storyboard.SetTarget(animation, Tempo);
+            Storyboard.SetTargetProperty(animation, new PropertyPath("(Rectangle.RenderTransform).(RotateTransform.Angle)"));
+            storyboard.Children.Add(animation);
+            storyboard.Begin();
+        }
+
+        /// <summary>
+        /// 到達時に反時計回り方向のアニメーションの実行
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void byRight(object sender, EventArgs e)
+        {
+            fromRighttoLeft(tickUpdated, MinAngle, MaxAngle);
         }
 
         private void TempoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
