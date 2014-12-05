@@ -67,7 +67,6 @@ namespace Media3Project
         /// </summary>
         float[] xmean = new float[100];
         float[] ymean = new float[100];
-        float[] Volume_array = new float[100];
         float Volume_max;
         float frame;
         /// <summary>
@@ -183,7 +182,7 @@ namespace Media3Project
                     // ジョイントの座標の表示
 
                     //１秒に１５フレーム表示
-                    Console.WriteLine("FrameNumber:" + skeletonFrame.FrameNumber);
+                   // Console.WriteLine("FrameNumber:" + skeletonFrame.FrameNumber);
 
                     // 計算用のカウント数　フレーム数mod100
                     // int number = skeletonFrame.FrameNumber%100;
@@ -201,10 +200,10 @@ namespace Media3Project
                     // x,yの右手の座標
                     FramePoint = skeleton.Joints[JointType.HandRight].Position;
 
-                    if (Math.Abs(xarray[number]-xarray[number-1])<BaseDirection)
-                    {
-                        InitialCount += 1;
-                    }
+         //          if (Math.Abs(xarray[number]-xarray[number-1])<BaseDirection)
+           //         {
+             //           InitialCount += 1;
+               //     }
 
 
                     float volume;
@@ -216,7 +215,7 @@ namespace Media3Project
                         Vector vector1 = new Vector(xarray[number] - xarray[number - 1], yarray[number] - yarray[number - 1]);
                         Vector vector2 = new Vector(xarray[number - 1] - xarray[number - 2], yarray[number - 1] - yarray[number - 2]);
                         angleBetween = (float)Vector.AngleBetween(vector1, vector2);
-                        Console.WriteLine("角度:" + angleBetween);
+                        
                     }
                     else
                     {
@@ -233,19 +232,14 @@ namespace Media3Project
                     }
 
                     meancount++;
-
-                     Volume_array[number]=yarray[number];
-
-                     Volume_max = Volume_array.Max();
+                     Volume_max = yarray.Max();
                         
-                    
-
                     // x,yの増加量
                     if (number != 0)
                     {
-                        float xgrad = xarray[number] - xarray[number - 1];
-                        float ygrad = yarray[number] - yarray[number - 1];
-                        grad[meannum] = xgrad / ygrad;
+                        //float xgrad = xarray[number] - xarray[number - 1];
+                        //float ygrad = yarray[number] - yarray[number - 1];
+                        //grad[meannum] = xgrad / ygrad;
 
                         // 特徴点の検出
                         if (angleBetween > Degree && frame+FrameDetect < skeletonFrame.FrameNumber)
@@ -255,8 +249,8 @@ namespace Media3Project
                             //Console.WriteLine("xfeature:" + xfeature);
 
                             // 特徴点ごとのx,y座標
-                            featureX[featurecount] = xarray[number];
-                            featureY[featurecount] = yarray[number];
+                            featureX[featurecount] = xmean[meannum];
+                            featureY[featurecount] = ymean[meannum];
 
                             // 青色のマーカー
                             DrawEllipse(kinect, FramePoint, 1);
@@ -268,8 +262,8 @@ namespace Media3Project
                             volume = Volume_max;
                        
                             volume = volume * 500;
-
-                            Console.WriteLine("volume:" + volume);
+                            // 0～128に変更しなければならない(次回)
+                           // Console.WriteLine("volume:" + volume);
 
                             VolumeChange((double)volume);
 
@@ -278,14 +272,19 @@ namespace Media3Project
                             }
                             else if(featurecount % 6 == 1 || featurecount % 6 == 3){ 
                             tempo = 2*(tempoarray[featurecount] - tempoarray[featurecount - 1]);
+                            tempo = 900 / tempo;
+
                             Console.WriteLine("tempo:" + tempo);
                             tickUpdated = tempo;
                             }
                             else
                             {
                                 tempo = tempoarray[featurecount] - tempoarray[featurecount - 1];
-                                Console.WriteLine("tempo:" + tempo);
+                                //bpmに変更する 900は一分間のフレーム数
+                                tempo = 900 / tempo;
                                 tickUpdated = tempo;
+                                Console.WriteLine("tempo:" + tempo);
+
                             }
 
                             featurecount++;
@@ -314,7 +313,7 @@ namespace Media3Project
 
                     //}
 
-                    Console.WriteLine("PublicCount:" + flamenum);
+                   // Console.WriteLine("PublicCount:" + flamenum);
 
 
 
