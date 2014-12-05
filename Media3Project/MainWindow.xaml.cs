@@ -465,7 +465,7 @@ namespace Media3Project
         /// <param name="e"></param>
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            TempoChange(1000, MinAngle, MaxAngle);
+            fromRighttoLeft(1000, MinAngle, MaxAngle);
         }
 
 
@@ -487,28 +487,59 @@ namespace Media3Project
         }
 
         /// <summary>
-        /// テンポのアニメーション(1往復)
+        /// テンポのアニメーション(反時計回り方向)
         /// </summary>
-        /// <param name="milliTime"></param>
-        /// <param name="StartAngle"></param>
-        /// <param name="FinishAngle"></param>
-        public void TempoChange(double milliTime, double StartAngle, double FinishAngle)
+        /// <param name="milliTime">RightからLeftまでの移動時間(msec)</param>
+        /// <param name="Right"></param>
+        /// <param name="Left"></param>
+        public void fromRighttoLeft(double milliTime, double Right, double Left)
         {
             Storyboard storyboard = new Storyboard();
-            DoubleAnimation animation = new DoubleAnimation { From = StartAngle, To = FinishAngle, Duration = new Duration(TimeSpan.FromMilliseconds(milliTime)) };
+            DoubleAnimation animation = new DoubleAnimation { From = Right, To = Left, Duration = new Duration(TimeSpan.FromMilliseconds(milliTime)) };
             animation.RepeatBehavior = new RepeatBehavior(1);
-            animation.AutoReverse = true;
-            storyboard.Completed += storyboard_Completed;
-
+            storyboard.Completed += byLeft;
             Storyboard.SetTarget(animation, Tempo);
             Storyboard.SetTargetProperty(animation, new PropertyPath("(Rectangle.RenderTransform).(RotateTransform.Angle)"));
             storyboard.Children.Add(animation);
             storyboard.Begin();
         }
 
-        void storyboard_Completed(object sender, EventArgs e)
+        /// <summary>
+        /// 到達時に時計回り方向のアニメーションの実行
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void byLeft(object sender, EventArgs e)
         {
-            TempoChange(tickUpdated, MinAngle, MaxAngle);
+            fromLefttoRight(tickUpdated, MaxAngle, MinAngle);
+        }
+
+        /// <summary>
+        /// テンポのアニメーション(時計回り方向)
+        /// </summary>
+        /// <param name="milliTime">LeftからRightまでの移動時間(msec)</param>
+        /// <param name="Left"></param>
+        /// <param name="Right"></param>
+        public void fromLefttoRight(double milliTime, double Left, double Right)
+        {
+            Storyboard storyboard = new Storyboard();
+            DoubleAnimation animation = new DoubleAnimation { From = Left, To = Right, Duration = new Duration(TimeSpan.FromMilliseconds(milliTime)) };
+            animation.RepeatBehavior = new RepeatBehavior(1);
+            storyboard.Completed += byRight;
+            Storyboard.SetTarget(animation, Tempo);
+            Storyboard.SetTargetProperty(animation, new PropertyPath("(Rectangle.RenderTransform).(RotateTransform.Angle)"));
+            storyboard.Children.Add(animation);
+            storyboard.Begin();
+        }
+
+        /// <summary>
+        /// 到達時に反時計回り方向のアニメーションの実行
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void byRight(object sender, EventArgs e)
+        {
+            fromRighttoLeft(tickUpdated, MinAngle, MaxAngle);
         }
 
         private void TempoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
