@@ -22,7 +22,8 @@ namespace Media3Project
     /// MainWindow.xaml の相互作用ロジック
     /// </summary>
     public partial class MainWindow : Window
-    {   
+    {
+        const double MAXTEMPOCOUNT = 50; 
         /// <summary>
         /// テンポ棒の右端
         /// </summary>
@@ -35,11 +36,12 @@ namespace Media3Project
         /// tickの更新用
         /// </summary>
         double tickUpdated = 100000;
-        const double Degree = 60;
+        const double Degree = 50;
         int number = 1;
         float[] xarray = new float[100];
         float[] yarray = new float[100];
         float[] grad = new float[100];
+        int maxtemponumber;
         /// <summary>
         /// 特徴点のx,y座標
         /// </summary>
@@ -67,6 +69,14 @@ namespace Media3Project
         float[] ymean = new float[100];
         float Volume_max;
         float frame;
+        float[] betweentempo = new float[100];
+        float[] maxtempo = new float[2];
+        float[] TotalDistance = new float[100];
+        float[] distance = new float[2];
+        float rate;
+        int tempocount = 0;
+        int maxtempocount = 0;
+        float[] ytempoarray = new float[100];
         /// <summary>
         /// 平均値の数
         /// </summary>
@@ -78,7 +88,7 @@ namespace Media3Project
         /// <summary>
         ///  特徴点の５フレーム以内は特徴点を検出しない
         /// </summary>
-        int FrameDetect = 5;
+        int FrameDetect = 7;
         /// <summary>
         /// 左側検出
         /// </summary>
@@ -170,7 +180,7 @@ namespace Media3Project
                     // ジョイントの座標の表示
 
                     //１秒に１５フレーム表示
-                   // Console.WriteLine("FrameNumber:" + skeletonFrame.FrameNumber);
+                    // Console.WriteLine("FrameNumber:" + skeletonFrame.FrameNumber);
 
                     // 計算用のカウント数　フレーム数mod100
                     // int number = skeletonFrame.FrameNumber%100;
@@ -185,13 +195,16 @@ namespace Media3Project
                     // x,yの右手の座標
                     FramePoint = skeleton.Joints[JointType.HandRight].Position;
 
-         //          if (Math.Abs(xarray[number]-xarray[number-1])<BaseDirection)
-           //         {
-             //           InitialCount += 1;
-               //     }
+                    //          if (Math.Abs(xarray[number]-xarray[number-1])<BaseDirection)
+                    //         {
+                    //           InitialCount += 1;
+                    //     }
 
                     float volume;
                     float tempo;
+
+
+
                     // 2直線の角度を求める
                     if (number > 2)
                     {
@@ -199,11 +212,7 @@ namespace Media3Project
                         Vector vector1 = new Vector(xarray[number] - xarray[number - 1], yarray[number] - yarray[number - 1]);
                         Vector vector2 = new Vector(xarray[number - 1] - xarray[number - 2], yarray[number - 1] - yarray[number - 2]);
                         angleBetween = (float)Vector.AngleBetween(vector1, vector2);
-                        
-                    }
-                    else
-                    {
-                        // ここはなんか記述？
+
                     }
 
                     if (meancount > 2 && number > 2)
@@ -216,62 +225,118 @@ namespace Media3Project
                     }
 
                     meancount++;
-                     Volume_max = yarray.Max();
+                    // 100はマイナスにしないための初期値
+                    Volume_max = 100 + 200 * (yarray.Max() - skeleton.Joints[JointType.Head].Position.Y);
+                    if (number != 0)
+                    {
+                        TotalDistance[tempocount] = (float)Math.Sqrt((double)((xarray[number] - xarray[number - 1])
+                            * (xarray[number] - xarray[number - 1]) + (yarray[number] - yarray[number - 1]) * (yarray[number] - yarray[number - 1])));
+
+                        tempocount++;
+                        if (tempocount > 98)
+                        {
+                            tempocount = 0;
+                            for (int i = 0; i < 98; i++)
+                            {
+                                distance[maxtempocount] += TotalDistance[i];
+                            }
+                            distance[maxtempocount] /= Volume_max;
+                            Console.WriteLine("distance:" + distance[maxtempocount]);
+                        //    rate = distance[0] / distance[1];
+                            maxtempocount++;
+                            if (maxtempocount > 1)
+                            {
+                                maxtempocount = 0;
+                                distance[0] = 0;
+                                distance[1] = 0;
+                            }
+                        
+                            
+
+                        }    
+                        
+                    }
+
+
+
+                    //maxtempocount++;
+                    //if (maxtempocount > MAXTEMPOCOUNT)
+                    //{
+                    //    maxtempocount = 0;
+                    //}
+
+                    //ytempoarray[maxtempocount] = skeleton.Joints[JointType.HandRight].Position.Y;
+
+                    //betweentempo[maxtempocount] = skeletonFrame.FrameNumber;
+                    //if (maxtempocount == MAXTEMPOCOUNT)
+                    //{
+                    //    for(int i=1;i<MAXTEMPOCOUNT;i++)
+                    //    {
+                    //    if(ytempoarray[i] == ytempoarray.Max())
+                    //      maxtemponumber = i;
+                    //    }
+                    //    maxtempo[tempocount]=betweentempo[maxtemponumber];
+                    //    tempocount++;
+                    //    if (tempocount > 1)
+                    //    {
+                    //        tempocount = 0;
+                    //    }
+
+                    //        tempo = Math.Abs(maxtempo[1] - maxtempo[0]);
+                            //tempo = 3600 / tempo;
+                           // Console.WriteLine("tempo:" + tempo);
+                        
+
+                    //}
+
 
                     // x,yの増加量
                     if (number != 0)
                     {
-                        //float xgrad = xarray[number] - xarray[number - 1];
-                        //float ygrad = yarray[number] - yarray[number - 1];
-                        //grad[meannum] = xgrad / ygrad;
 
                         // 特徴点の検出
                         if (angleBetween > Degree && frame + FrameDetect < skeletonFrame.FrameNumber)
                         {
                             frame = skeletonFrame.FrameNumber;
-                            //xfeature = xarray[number];
-                            //yfeature = yarray[number];
-                            //Console.WriteLine("xfeature:" + xfeature);
-
+                            
                             // 特徴点ごとのx,y座標
-                            featureX[featurecount] = xmean[meannum];
-                            featureY[featurecount] = ymean[meannum];
+                            featureX[featurecount] = xarray[number];
+                            featureY[featurecount] = yarray[number];
 
                             // 青色のマーカー
                             DrawEllipse(kinect, FramePoint, 1);
 
-                            // 特徴点間の距離による音量の計算
-                            //volume = (float)Math.Sqrt((double)((xarray[number] - xarray[number - 1]) * (xarray[number] - xarray[number-1]) +
-                            //         (yarray[number] - yarray[number - 1]) * (yarray[number] - yarray[number-1])));
-
                             volume = Volume_max;
-                       
-                            volume = volume * 500;
-                            // 0～128に変更しなければならない(次回)
-                           // Console.WriteLine("volume:" + volume);
+
+                            Console.WriteLine("volume:" + volume);
+                          // 0～128に変更しなければならない(次回)
+                          //   Console.WriteLine("volume:" + volume);
 
                             VolumeChange((double)volume);
 
-                            tempoarray[featurecount] = skeletonFrame.FrameNumber;
-                            if (featurecount % 6 == 0 || featurecount % 6 == 2)
-                            {
-                            }
-                            else if(featurecount % 6 == 1 || featurecount % 6 == 3){ 
-                            tempo = 2*(tempoarray[featurecount] - tempoarray[featurecount - 1]);
-                            tempo = 900 / tempo;
+                            //tempoarray[featurecount] = skeletonFrame.FrameNumber;
+                            //if (featurecount % 6 == 0 || featurecount % 6 == 2)
+                            //{
+                            //}
+                            //else if (featurecount % 6 == 1 || featurecount % 6 == 3)
+                            //{
+                            //    tempo = 2*(tempoarray[featurecount] - tempoarray[featurecount - 1]);
+                            //    Console.WriteLine("frame:" + tempo);
+                            //    tempo = 900 / tempo;
 
-                            Console.WriteLine("tempo:" + tempo);
-                            tickUpdated = tempo;
-                            }
-                            else
-                            {
-                                tempo = tempoarray[featurecount] - tempoarray[featurecount - 1];
-                                //bpmに変更する 900は一分間のフレーム数
-                                tempo = 900 / tempo;
-                                tickUpdated = tempo;
-                                Console.WriteLine("tempo:" + tempo);
+                            //    Console.WriteLine("tempo:" + tempo);
+                            //    tickUpdated = tempo;
+                            //}
+                            //else
+                            //{
+                            //    tempo = tempoarray[featurecount] - tempoarray[featurecount - 1];
+                            //    Console.WriteLine("frame:" + tempo);
+                            //    bpmに変更する 900は一分間のフレーム数
+                            //    tempo = 900 / tempo;
+                            //    tickUpdated = tempo;
+                            //    Console.WriteLine("tempo:" + tempo);
 
-                            }
+                            //}
 
                             featurecount++;
                             if (featurecount > 98)
@@ -296,25 +361,26 @@ namespace Media3Project
                         flamenum = 0;
                     }
 
-                    //}
-
-                   // Console.WriteLine("PublicCount:" + flamenum);
-
-                     // int body_part = 0;
+                    
                     if (skeleton.Joints[JointType.Head].Position.X < skeleton.Joints[JointType.HipCenter].Position.X - 0.1 && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
                         Console.WriteLine("左側検出");
-                        //    body_part = 1;
                         leftfrag = 1;
+                        rightfrag = 0;
                     }
                     else if (skeleton.Joints[JointType.Head].Position.X > skeleton.Joints[JointType.HipCenter].Position.X + 0.1 && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
                         Console.WriteLine("右側検出");
-                        //     body_part = 2;
+                        rightfrag = 1;
+                        leftfrag = 0;
+                    }
+                    else if (skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
+                    {
+                        Console.WriteLine("正面検出");
+                        leftfrag = 1;
                         rightfrag = 1;
                     }
-                    else
-                    {
+                    else {
                         leftfrag = 0;
                         rightfrag = 0;
                     }
@@ -396,8 +462,6 @@ namespace Media3Project
             Tempo.RenderTransformOrigin = new Point(0.5, 1.0);
             // テンポ角の初期化
             Tempo.RenderTransform = new RotateTransform(0);
-            // テンポの動作開始
-            fromRighttoLeft(tickUpdated, MinAngle, MaxAngle);
         }
 
         /// <summary>
