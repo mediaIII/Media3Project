@@ -37,9 +37,54 @@
     <StartupObject />
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="avenue.core">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\avenue.core.dll</HintPath>
+    </Reference>
+    <Reference Include="avenue.filing">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\avenue.filing.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Kinect, Version=1.8.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\..\..\..\..\Program Files\Microsoft SDKs\Kinect\v1.8\Assemblies\Microsoft.Kinect.dll</HintPath>
+    </Reference>
+    <Reference Include="nextmidi.data">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\nextmidi.data.dll</HintPath>
+    </Reference>
+    <Reference Include="nextmidi.dataelement">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\nextmidi.dataelement.dll</HintPath>
+    </Reference>
+    <Reference Include="nextmidi.dataelement.status">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\nextmidi.dataelement.status.dll</HintPath>
+    </Reference>
+    <Reference Include="nextmidi.filing.midi">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\nextmidi.filing.midi.dll</HintPath>
+    </Reference>
+    <Reference Include="nextmidi.filing.midi.chunk">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\nextmidi.filing.midi.chunk.dll</HintPath>
+    </Reference>
+    <Reference Include="nextmidi.filing.midi.midifile">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\nextmidi.filing.midi.midifile.dll</HintPath>
+    </Reference>
+    <Reference Include="nextmidi.midiport.bridge">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\nextmidi.midiport.bridge.dll</HintPath>
+    </Reference>
+    <Reference Include="nextmidi.midiport.core">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\nextmidi.midiport.core.dll</HintPath>
+    </Reference>
+    <Reference Include="nextmidi.midiport.input">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\nextmidi.midiport.input.dll</HintPath>
+    </Reference>
+    <Reference Include="nextmidi.midiport.input.core">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\nextmidi.midiport.input.core.dll</HintPath>
+    </Reference>
+    <Reference Include="nextmidi.midiport.output">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\nextmidi.midiport.output.dll</HintPath>
+    </Reference>
+    <Reference Include="nextmidi.midiport.output.core">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\nextmidi.midiport.output.core.dll</HintPath>
+    </Reference>
+    <Reference Include="nextmidi.time">
+      <HintPath>..\..\..\..\Downloads\nextmidi\Package\nextmidi.time.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Data" />

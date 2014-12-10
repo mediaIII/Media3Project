@@ -1,7 +1,19 @@
-﻿using System;
+﻿using Microsoft.Kinect;
+using NextMidi.Data;
+using NextMidi.Data.Domain;
+using NextMidi.Data.Score;
+using NextMidi.DataElement;
+using NextMidi.DataElement.MetaData;
+using NextMidi.Filing.Midi;
+using NextMidi.MidiPort.Output;
+using NextMidi.Time;
+using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,12 +21,11 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
-using System.Windows.Media.Animation;
-using Microsoft.Kinect;
-using System.Threading;
+
 
 namespace Media3Project
 {
@@ -23,7 +34,7 @@ namespace Media3Project
     /// </summary>
     public partial class MainWindow : Window
     {
-        const double MAXTEMPOCOUNT = 50; 
+        const double MAXTEMPOCOUNT = 50;
         /// <summary>
         /// テンポ棒の右端
         /// </summary>
@@ -35,11 +46,11 @@ namespace Media3Project
         /// <summary>
         /// tickの更新用
         /// </summary>
-        double tickUpdated = 100000;
+        public static double tickUpdated = 1;
         const double Degree = 50;
         int number = 1;
-        float[] xarray = new float[100];
-        float[] yarray = new float[100];
+        float[] xarray = new float[75];
+        float[] yarray = new float[75];
         float[] grad = new float[100];
         int maxtemponumber;
         /// <summary>
@@ -71,7 +82,7 @@ namespace Media3Project
         float frame;
         float[] betweentempo = new float[100];
         float[] maxtempo = new float[2];
-        float[] TotalDistance = new float[100];
+        float[] TotalDistance = new float[75];
         float[] distance = new float[2];
         float rate;
         int tempocount = 0;
@@ -105,6 +116,14 @@ namespace Media3Project
         /// 初期位置を判定するときの誤差
         /// </summary>
         float BaseDirection;
+        MyMidiOutPort MyMidiOutPort;
+        MidiData MidiData;
+        MidiPlayer Player;
+        //グループ(パート)の配列
+        static public int[] group = new int[128];
+        //チャンネルの番号番目に楽器番号が入った配列
+        static public int[] value = new int[128];
+
         public MainWindow()
         {
             InitializeComponent();
@@ -132,6 +151,46 @@ namespace Media3Project
                 MessageBox.Show(ex.Message);
                 Close();
             }
+
+
+            //Midiの参照
+
+            // ポートの指定
+            MyMidiOutPort = new MyMidiOutPort(new MidiOutPort(0));
+            Console.WriteLine(MyMidiOutPort.IsOpen);
+
+            // 指定したポートを開く
+            try
+            {
+                MyMidiOutPort.Open();
+            }
+            catch
+            {
+                Console.WriteLine("no such port exists");
+                return;
+            }
+            // ファイルパスの指定
+            //            string path = "test.mid";
+            string path = "C:\\Users\\media3\\Downloads\\DQ.mid";
+            if (!File.Exists(path))
+            {
+                Console.WriteLine("File dose not exist");
+                return;
+            }
+            // midiファイルの読み込み
+            MidiData = MidiReader.ReadFrom(path, Encoding.GetEncoding("shift-jis"));
+            MidiFileDomain domain = new MidiFileDomain(MidiData);
+
+            //曲に使われている楽器を5つのグループに分ける
+            MakeGroup();
+            //CheckStrument();
+
+            // Playerの作成
+            Player = new MidiPlayer(MyMidiOutPort);
+            Player.Stopped += Player_Stopped;
+            // 別スレッドでの演奏開始
+            Player.Play(domain);
+
         }
 
         private void StartKinect(KinectSensor kinectSensor)
@@ -188,7 +247,7 @@ namespace Media3Project
                     SkeletonPoint FramePoint;
 
                     number++;
-                    number = number % 100;
+                    number = number % 75;
 
                     xarray[number] = skeleton.Joints[JointType.HandRight].Position.X;
                     yarray[number] = skeleton.Joints[JointType.HandRight].Position.Y;
@@ -233,16 +292,20 @@ namespace Media3Project
                             * (xarray[number] - xarray[number - 1]) + (yarray[number] - yarray[number - 1]) * (yarray[number] - yarray[number - 1])));
 
                         tempocount++;
-                        if (tempocount > 98)
+                        if (tempocount > 73)
                         {
                             tempocount = 0;
-                            for (int i = 0; i < 98; i++)
+                            for (int i = 0; i < 73; i++)
                             {
                                 distance[maxtempocount] += TotalDistance[i];
                             }
                             distance[maxtempocount] /= Volume_max;
+                            tickUpdated = (double)10 * distance[maxtempocount];
+                            //tickUpdated = 1.0;
                             Console.WriteLine("distance:" + distance[maxtempocount]);
-                        //    rate = distance[0] / distance[1];
+                            // if(distance[maxtempocount]<0.003)
+
+                            //    rate = distance[0] / distance[1];
                             maxtempocount++;
                             if (maxtempocount > 1)
                             {
@@ -250,11 +313,10 @@ namespace Media3Project
                                 distance[0] = 0;
                                 distance[1] = 0;
                             }
-                        
-                            
 
-                        }    
-                        
+
+                        }
+
                     }
 
 
@@ -283,9 +345,9 @@ namespace Media3Project
                     //    }
 
                     //        tempo = Math.Abs(maxtempo[1] - maxtempo[0]);
-                            //tempo = 3600 / tempo;
-                           // Console.WriteLine("tempo:" + tempo);
-                        
+                    //tempo = 3600 / tempo;
+                    // Console.WriteLine("tempo:" + tempo);
+
 
                     //}
 
@@ -298,7 +360,7 @@ namespace Media3Project
                         if (angleBetween > Degree && frame + FrameDetect < skeletonFrame.FrameNumber)
                         {
                             frame = skeletonFrame.FrameNumber;
-                            
+
                             // 特徴点ごとのx,y座標
                             featureX[featurecount] = xarray[number];
                             featureY[featurecount] = yarray[number];
@@ -309,11 +371,11 @@ namespace Media3Project
                             volume = Volume_max;
 
                             Console.WriteLine("volume:" + volume);
-                          // 0～128に変更しなければならない(次回)
-                          //   Console.WriteLine("volume:" + volume);
+                            // 0～128に変更しなければならない(次回)
+                            //   Console.WriteLine("volume:" + volume);
 
                             VolumeChange((double)volume);
-
+                            Kinect_Volume_Change(leftfrag, rightfrag, (int)volume);
                             //tempoarray[featurecount] = skeletonFrame.FrameNumber;
                             //if (featurecount % 6 == 0 || featurecount % 6 == 2)
                             //{
@@ -361,7 +423,7 @@ namespace Media3Project
                         flamenum = 0;
                     }
 
-                    
+
                     if (skeleton.Joints[JointType.Head].Position.X < skeleton.Joints[JointType.HipCenter].Position.X - 0.1 && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
                         Console.WriteLine("左側検出");
@@ -380,10 +442,12 @@ namespace Media3Project
                         leftfrag = 1;
                         rightfrag = 1;
                     }
-                    else {
+                    else
+                    {
                         leftfrag = 0;
                         rightfrag = 0;
                     }
+
                 }
             }
         }
@@ -464,11 +528,7 @@ namespace Media3Project
             Tempo.RenderTransform = new RotateTransform(0);
         }
 
-        /// <summary>
-        /// スライダーの動きに合わせてボリュームが動く
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
+        
         public void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             // 12 は調整用の係数
@@ -482,7 +542,7 @@ namespace Media3Project
         /// <param name="e"></param>
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            fromRighttoLeft(1000, MinAngle, MaxAngle);
+            fromRighttoLeft(0.1, MinAngle, MaxAngle);
         }
 
         /// <summary>
@@ -505,13 +565,13 @@ namespace Media3Project
         /// <summary>
         /// テンポのアニメーション(反時計回り方向)
         /// </summary>
-        /// <param name="milliTime">RightからLeftまでの移動時間(msec)</param>
+        /// <param name="secTime">RightからLeftまでの移動時間(msec)</param>
         /// <param name="Right"></param>
         /// <param name="Left"></param>
-        public void fromRighttoLeft(double milliTime, double Right, double Left)
+        public void fromRighttoLeft(double secTime, double Right, double Left)
         {
             Storyboard storyboard = new Storyboard();
-            DoubleAnimation animation = new DoubleAnimation { From = Right, To = Left, Duration = new Duration(TimeSpan.FromMilliseconds(milliTime)) };
+            DoubleAnimation animation = new DoubleAnimation { From = Right, To = Left, Duration = new Duration(TimeSpan.FromSeconds(secTime)) };
             animation.RepeatBehavior = new RepeatBehavior(1);
             storyboard.Completed += byLeft;
             Storyboard.SetTarget(animation, Tempo);
@@ -533,13 +593,13 @@ namespace Media3Project
         /// <summary>
         /// テンポのアニメーション(時計回り方向)
         /// </summary>
-        /// <param name="milliTime">LeftからRightまでの移動時間(msec)</param>
+        /// <param name="secTime">LeftからRightまでの移動時間(msec)</param>
         /// <param name="Left"></param>
         /// <param name="Right"></param>
-        public void fromLefttoRight(double milliTime, double Left, double Right)
+        public void fromLefttoRight(double secTime, double Left, double Right)
         {
             Storyboard storyboard = new Storyboard();
-            DoubleAnimation animation = new DoubleAnimation { From = Left, To = Right, Duration = new Duration(TimeSpan.FromMilliseconds(milliTime)) };
+            DoubleAnimation animation = new DoubleAnimation { From = Left, To = Right, Duration = new Duration(TimeSpan.FromSeconds(secTime)) };
             animation.RepeatBehavior = new RepeatBehavior(1);
             storyboard.Completed += byRight;
             Storyboard.SetTarget(animation, Tempo);
@@ -566,6 +626,233 @@ namespace Media3Project
         private void clear_Click(object sender, RoutedEventArgs e)
         {
             canvas1.Children.Clear();
+        }
+
+        /// <summary>
+        /// [note.value]番目にnote.valueの楽器がどのグループに入るか0〜4の数字が入った配列をつくる
+        /// </summary>
+        void MakeGroup()
+        {
+            foreach (var track in MidiData.Tracks)
+            {
+                foreach (var note in track.GetData<ProgramEvent>())
+                {
+                    //0?7, 16?24番の楽器番号ならパート0
+                    if ((0 <= note.Value && note.Value <= 7) || (16 <= note.Value && note.Value <= 23))
+                    {
+                        group[note.Value] = 0;
+                        value[(int)note.Channel] = note.Value;
+                        Console.WriteLine("strument{0} group{1}", note.Value, group[note.Value]);
+                    }
+                    //8?15, 108, 112?119番の楽器番号ならパート1
+                    if ((8 <= note.Value && note.Value <= 15) || (112 <= note.Value && note.Value <= 119) || note.Value == 108)
+                    {
+                        group[note.Value] = 1;
+                        value[(int)note.Channel] = note.Value;
+                        Console.WriteLine("strument{0} group{1}", note.Value, group[note.Value]);
+                    }
+                    //24?55, 104?107, 110番の楽器番号ならパート2
+                    if ((24 <= note.Value && note.Value <= 55) || (104 <= note.Value && note.Value <= 107) || note.Value == 110)
+                    {
+                        group[note.Value] = 2;
+                        value[(int)note.Channel] = note.Value;
+                        Console.WriteLine("strument{0} group{1}", note.Value, group[note.Value]);
+                    }
+                    //56?79, 109, 111番の楽器番号ならパート3
+                    if ((56 <= note.Value && note.Value <= 79) || note.Value == 109 || note.Value == 111)
+                    {
+                        group[note.Value] = 3;
+                        value[(int)note.Channel] = note.Value;
+                        Console.WriteLine("strument{0} group{1}", note.Value, group[note.Value]);
+                    }
+                    //80〜103,120?127番の楽器番号ならパート4
+                    if ((80 <= note.Value && note.Value <= 103) || (120 <= note.Value && note.Value <= 127))
+                    {
+                        group[note.Value] = 4;
+                        value[(int)note.Channel] = note.Value;
+                        Console.WriteLine("strument{0} group{1}", note.Value, group[note.Value]);
+                    }
+
+                }
+            }
+        }
+
+        /// <summary>
+        /// チャンネル内の楽器番号を羅列
+        /// </summary>
+        void CheckStrument()
+        {
+            foreach (var track in MidiData.Tracks)
+            {
+                foreach (var note in track.GetData<ProgramEvent>())
+                {
+                    Console.WriteLine("strument {0} channel {1}", note.Value, note.Channel);
+                }
+            }
+        }
+
+        void Player_Stopped(object sender, EventArgs e)
+        {
+            MyMidiOutPort.Close();
+        }
+        /// <summary>
+        /// キネクトでのボリューム変更の反映
+        /// </summary>
+        /// <param name="leftflag"></param>
+        /// <param name="rightflag"></param>
+        /// <param name="volume"></param>
+        void Kinect_Volume_Change(int leftflag, int rightflag, int volume)
+        {
+            if (MyMidiOutPort != null)
+            {
+                if (leftflag == 0 && rightflag == 0)
+                {
+                    MyMidiOutPort.deltaVelocity0 = (volume - 100) * 10;
+                    MyMidiOutPort.deltaVelocity1 = (volume - 100) * 10;
+                    MyMidiOutPort.deltaVelocity2 = (volume - 100) * 10;
+                }
+                else if (leftflag == 1 && rightflag == 0)
+                {
+                    MyMidiOutPort.deltaVelocity1 = (volume - 100) * 10;
+                }
+                else if (leftflag == 0 && rightflag == 1)
+                {
+                    MyMidiOutPort.deltaVelocity2 = (volume - 100) * 10;
+                }
+                else if (leftflag == 1 && rightflag == 1)
+                {
+                    MyMidiOutPort.deltaVelocity0 = (volume - 100) * 10;
+                }
+            }
+        }
+    }
+    /// <summary>
+    /// MidiOutPortのSend改良版
+    /// </summary>
+    class MyMidiOutPort : IMidiOutPort
+    {
+        /// <summary>
+        ///  パート(グループ)
+        /// </summary>
+        int[] MainWindowGroup = Media3Project.MainWindow.group;
+        /// <summary>
+        /// 楽器番号
+        /// </summary>
+        int[] MainWindowValue = Media3Project.MainWindow.value;
+        MidiOutPort Delegate;
+        /// <summary>
+        /// Tickの比率
+        /// </summary>
+        public double Coef = 1.0;
+        /// <summary>
+        /// Velocityの増減量
+        /// </summary>
+        public int deltaVelocity = 0;
+        /// <summary>
+        /// グループ0のVelocityの増減量
+        /// </summary>
+        public int deltaVelocity0 = 0;
+        /// <summary>
+        /// グループ1のVelocityの増減量
+        /// </summary>
+        public int deltaVelocity1 = 0;
+        /// <summary>
+        /// グループ2のVelocityの増減量
+        /// </summary>
+        public int deltaVelocity2 = 0;
+        /// <summary>
+        /// Velocityの最大
+        /// </summary>
+        private const byte MaxVelocity = 127;
+        /// <summary>
+        /// MyMidiOutPort のインスタンス
+        /// </summary>
+        /// <param name="index"></param>
+        public MyMidiOutPort(MidiOutPort MidiOutPort)
+        {
+            Delegate = MidiOutPort;
+        }
+        /// <summary>
+        /// MidiOutPortのIsOpen
+        /// </summary>
+        /// 
+        public bool IsOpen
+        {
+            get
+            {
+                return Delegate.IsOpen;
+            }
+            set
+            {
+                Delegate.IsOpen = value;
+            }
+        }
+        /// <summary>
+        /// MidiOutPortのName
+        /// </summary>
+        public string Name
+        {
+            get
+            {
+                return Delegate.Name;
+            }
+        }
+        /// <summary>
+        /// MidiOutPortのClose()
+        /// </summary>
+        public void Close()
+        {
+            Delegate.Close();
+        }
+        /// <summary>
+        /// MidiOutPortのOpen()
+        /// </summary>
+        public void Open()
+        {
+            Delegate.Open();
+        }
+        /// <summary>
+        /// dataを加工し, MidiOutPortのSendを使う
+        /// </summary>
+        /// <param name="data"></param>
+        public void Send(IMidiEvent data)
+        {
+            //ここでデータ加工
+            if (data.RequireToSend)
+            {
+                modifyData(data);
+            }
+            Delegate.Send(data);
+        }
+        private void modifyData(IMidiEvent data)
+        {
+            if (data is NoteOnEvent)
+            {
+                var Note = (NoteOnEvent)data;
+                /*現在いじってるチャンネルの楽器番号がどのグループ(0~2)に属するか調べ、
+                 それぞれの音量を変更*/
+                switch (MainWindowGroup[MainWindowValue[(int)Note.Channel]])
+                {
+                    case 0:
+                        Note.Velocity = (int)(Note.Velocity) + deltaVelocity0 > 0 ? (byte)Math.Min(127, (int)(Note.Velocity) + deltaVelocity0) : (byte)0;
+                        //Note.Velocity = 0;
+                        break;
+                    case 3:
+                        Note.Velocity = (int)(Note.Velocity) + deltaVelocity1 > 0 ? (byte)Math.Min(127, (int)(Note.Velocity) + deltaVelocity1) : (byte)0;
+                        //Note.Velocity = 0;
+                        break;
+                    case 2:
+                        Note.Velocity = (int)(Note.Velocity) + deltaVelocity2 > 0 ? (byte)Math.Min(127, (int)(Note.Velocity) + deltaVelocity2) : (byte)0;
+                        //Note.Velocity = 0;
+                        break;
+                    default:
+                        Note.Velocity = (int)(Note.Velocity) + deltaVelocity > 0 ? (byte)Math.Min(127, (int)(Note.Velocity) + deltaVelocity) : (byte)0;
+                        //Note.Velocity = 0;
+                        break;
+                }
+
+                //Console.Write(" {0} ", MainWindowValue[(int)Note.Channel]);
+            }
         }
     }
 }
