@@ -83,11 +83,16 @@ namespace Media3Project
         float[] betweentempo = new float[100];
         float[] maxtempo = new float[2];
         float[] TotalDistance = new float[75];
-        float[] distance = new float[2];
+        float[] tempo2 = new float[2];
         float rate;
         int tempocount = 0;
         int maxtempocount = 0;
+        double Headposition = 0;
         float[] ytempoarray = new float[100];
+        StreamWriter w = new StreamWriter("kekka.txt");
+
+
+
         /// <summary>
         /// 平均値の数
         /// </summary>
@@ -99,7 +104,7 @@ namespace Media3Project
         /// <summary>
         ///  特徴点の５フレーム以内は特徴点を検出しない
         /// </summary>
-        int FrameDetect = 7;
+        int FrameDetect = 30;
         /// <summary>
         /// 左側検出
         /// </summary>
@@ -124,10 +129,14 @@ namespace Media3Project
         //チャンネルの番号番目に楽器番号が入った配列
         static public int[] value = new int[128];
 
+        MyQueue Queue = new MyQueue();
+
+
         public MainWindow()
         {
             InitializeComponent();
             this.Loaded += MainWindow_Loaded;
+            this.Closing += Window_Closing;
         }
 
         void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -262,6 +271,12 @@ namespace Media3Project
                     float volume;
                     float tempo;
 
+                    //  Console.WriteLine("x:" + xarray[number]);
+                    // Console.WriteLine("y:" + yarray[number]);
+
+
+                    w.WriteLine("{0}\t{1}", xarray[number], yarray[number]);
+                    // w.WriteLine("\t   ",yarray[number]);
 
 
                     // 2直線の角度を求める
@@ -283,41 +298,58 @@ namespace Media3Project
                         meancount = 0;
                     }
 
+
+                    Queue.Add(skeleton.Joints[JointType.HandRight].Position.X);
+                    //if (skeleton.Joints[JointType.HandRight].Position.X < skeleton.Joints[JointType.Head].Position.X)
+                    //{
+                    //    Console.WriteLine("0:" + Queue.Fetch(0));
+                    //    Console.WriteLine("1:" + Queue.Fetch(1));
+                    //    Console.WriteLine("2:" + Queue.Fetch(2));
+                    //    Console.WriteLine("frame:" + frame);
+                    //    Console.WriteLine("fd:" + FrameDetect);
+                    //    Console.WriteLine("num:" + skeletonFrame.FrameNumber);
+
+                    //}
+
+
+
                     meancount++;
                     // 100はマイナスにしないための初期値
-                    Volume_max = 100 + 200 * (yarray.Max() - skeleton.Joints[JointType.Head].Position.Y);
-                    if (number != 0)
-                    {
-                        TotalDistance[tempocount] = (float)Math.Sqrt((double)((xarray[number] - xarray[number - 1])
-                            * (xarray[number] - xarray[number - 1]) + (yarray[number] - yarray[number - 1]) * (yarray[number] - yarray[number - 1])));
+                    // Volume_max = 100 + 200 * (yarray.Max() - skeleton.Joints[JointType.Head].Position.Y);
+                    Volume_max = 100 + 200 * (yarray.Max() - yarray.Min());
 
-                        tempocount++;
-                        if (tempocount > 73)
-                        {
-                            tempocount = 0;
-                            for (int i = 0; i < 73; i++)
-                            {
-                                distance[maxtempocount] += TotalDistance[i];
-                            }
-                            distance[maxtempocount] /= Volume_max;
-                            tickUpdated = (double)10 * distance[maxtempocount];
-                            //tickUpdated = 1.0;
-                            Console.WriteLine("distance:" + distance[maxtempocount]);
-                            // if(distance[maxtempocount]<0.003)
+                    //if (number != 0)
+                    //{
+                    //    TotalDistance[tempocount] = (float)Math.Sqrt((double)((xarray[number] - xarray[number - 1])
+                    //        * (xarray[number] - xarray[number - 1]) + (yarray[number] - yarray[number - 1]) * (yarray[number] - yarray[number - 1])));
 
-                            //    rate = distance[0] / distance[1];
-                            maxtempocount++;
-                            if (maxtempocount > 1)
-                            {
-                                maxtempocount = 0;
-                                distance[0] = 0;
-                                distance[1] = 0;
-                            }
+                    //    tempocount++;
+                    //    if (tempocount > 73)
+                    //    {
+                    //        tempocount = 0;
+                    //        for (int i = 0; i < 73; i++)
+                    //        {
+                    //            distance[maxtempocount] += TotalDistance[i];
+                    //        }
+                    //        distance[maxtempocount] /= Volume_max;
+                    //        tickUpdated = (double)10 * distance[maxtempocount];
+                    //        //tickUpdated = 1.0;
+                    //        //  Console.WriteLine("distance:" + distance[maxtempocount]);
+                    //        // if(distance[maxtempocount]<0.003)
+
+                    //        //    rate = distance[0] / distance[1];
+                    //        maxtempocount++;
+                    //        if (maxtempocount > 1)
+                    //        {
+                    //            maxtempocount = 0;
+                    //            distance[0] = 0;
+                    //            distance[1] = 0;
+                    //        }
 
 
-                        }
+                    //    }
 
-                    }
+                    //}
 
 
 
@@ -359,18 +391,19 @@ namespace Media3Project
                         // 特徴点の検出
                         if (angleBetween > Degree && frame + FrameDetect < skeletonFrame.FrameNumber)
                         {
-                            frame = skeletonFrame.FrameNumber;
+
+                       //     frame = skeletonFrame.FrameNumber;
 
                             // 特徴点ごとのx,y座標
                             featureX[featurecount] = xarray[number];
                             featureY[featurecount] = yarray[number];
 
                             // 青色のマーカー
-                            DrawEllipse(kinect, FramePoint, 1);
+                            //         DrawEllipse(kinect, FramePoint, 1);
 
                             volume = Volume_max;
 
-                            Console.WriteLine("volume:" + volume);
+                            //        Console.WriteLine("volume:" + volume);
                             // 0～128に変更しなければならない(次回)
                             //   Console.WriteLine("volume:" + volume);
 
@@ -424,14 +457,18 @@ namespace Media3Project
                     }
 
 
-                    if (skeleton.Joints[JointType.Head].Position.X < skeleton.Joints[JointType.HipCenter].Position.X - 0.1 && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
+                    if (skeleton.Joints[JointType.Head].Position.X < skeleton.Joints[JointType.HipCenter].Position.X - 0.1
+                        && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
+                        Headposition=-0.08q;
                         Console.WriteLine("左側検出");
                         leftfrag = 1;
                         rightfrag = 0;
                     }
-                    else if (skeleton.Joints[JointType.Head].Position.X > skeleton.Joints[JointType.HipCenter].Position.X + 0.1 && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
+                    else if (skeleton.Joints[JointType.Head].Position.X > skeleton.Joints[JointType.HipCenter].Position.X + 0.1
+                        && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
+                        Headposition = 0.05;
                         Console.WriteLine("右側検出");
                         rightfrag = 1;
                         leftfrag = 0;
@@ -439,22 +476,41 @@ namespace Media3Project
                     else if (skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
                         Console.WriteLine("正面検出");
+                        Headposition = 0;
                         leftfrag = 1;
                         rightfrag = 1;
                     }
                     else
                     {
+                        Headposition = 0;
                         leftfrag = 0;
                         rightfrag = 0;
                     }
 
+                    if (skeleton.Joints[JointType.HandRight].Position.X < (skeleton.Joints[JointType.Head].Position.X + Headposition)
+                           && Queue.Fetch(0) > Queue.Fetch(1) && Queue.Fetch(1) < Queue.Fetch(2) && frame + FrameDetect < skeletonFrame.FrameNumber)
+                    {
+                        frame = skeletonFrame.FrameNumber;
+                        tempo2[tempocount] = frame;
+                        tempocount++;
+                        if (tempocount > 1)
+                        {
+                            tempocount = 0;
+                        }
+
+                        tempo = Math.Abs(tempo2[0] - tempo2[1]);
+
+                        Console.WriteLine("tempo:" + tempo);
+                        Console.WriteLine("volume:" + Volume_max);
+                        DrawEllipse(kinect, FramePoint, 1);
+                    }
                 }
             }
         }
 
         private void DrawEllipse(KinectSensor kinect, SkeletonPoint position, int flag)
         {
-            const int R = 5;
+            const int R = 7;
 
             // スケルトンの座標を、RGBカメラの座標に変換する
             ColorImagePoint point = kinect.CoordinateMapper.MapSkeletonPointToColorPoint(position, kinect.ColorStream.Format);
@@ -469,14 +525,17 @@ namespace Media3Project
             if (flag == 1)
             {
                 ellipse.Fill = new SolidColorBrush(Colors.Blue);
+                ellipse.Margin = new Thickness(point.X - R, point.Y - R, 0, 0);
+                ellipse.Width = R * 2;
+                ellipse.Height = R * 2;
             }
             else
             {
                 ellipse.Fill = new SolidColorBrush(Colors.Red);
+                ellipse.Margin = new Thickness(point.X - 2, point.Y - 2, 0, 0);
+                ellipse.Width = 2 * 2;
+                ellipse.Height = 2 * 2;
             }
-            ellipse.Margin = new Thickness(point.X - R, point.Y - R, 0, 0);
-            ellipse.Width = R * 2;
-            ellipse.Height = R * 2;
             canvas1.Children.Add(ellipse);
         }
 
@@ -498,6 +557,7 @@ namespace Media3Project
                     // スケルトンのフレーム更新イベントを削除する
                     kinect.SkeletonFrameReady -= kinectSensor_SkeletonFrameReady;
                     // Kinectの停止と、ネイティブリソースを解放する
+                    w.Close();
                     kinect.Stop();
                     kinect.Dispose();
                 }
@@ -511,6 +571,7 @@ namespace Media3Project
         /// <param name="e"></param>
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            w.Close();
             StopKinect(KinectSensor.KinectSensors[0]);
         }
 
@@ -528,7 +589,7 @@ namespace Media3Project
             Tempo.RenderTransform = new RotateTransform(0);
         }
 
-        
+
         public void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             // 12 は調整用の係数
