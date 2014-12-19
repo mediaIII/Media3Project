@@ -61,7 +61,7 @@ namespace Media3Project
         /// <summary>
         /// 特徴点のカウント
         /// </summary>
-        int featurecount = 1;
+        int featurecount = 0;
         /// <summary>
         /// テンポ用配列
         /// </summary>
@@ -87,6 +87,7 @@ namespace Media3Project
         float rate;
         int tempocount = 0;
         int maxtempocount = 0;
+        int startfrag = 0;
         double Headposition = 0;
         float[] ytempoarray = new float[100];
         StreamWriter w = new StreamWriter("kekka.txt");
@@ -124,11 +125,30 @@ namespace Media3Project
         MyMidiOutPort MyMidiOutPort;
         MidiData MidiData;
         MidiPlayer Player;
-        //グループ(パート)の配列
+        /// <summary>
+        /// グループ(パート)の配列
+        /// </summary>
         static public int[] group = new int[128];
-        //チャンネルの番号番目に楽器番号が入った配列
+        /// <summary>
+        /// チャンネルの番号番目に楽器番号が入った配列
+        /// </summary>
         static public int[] value = new int[128];
-
+        /// <summary>
+        /// 原曲のTickが入った一次元配列
+        /// </summary>
+        List<int> tick_org = new List<int>();
+        /// <summary>
+        /// 原曲のGateが入った一次元配列
+        /// </summary>
+        List<int> gate_org = new List<int>();
+        /// <summary>
+        /// Tickをいじる比率
+        /// </summary>
+        double Coef = 1.0;
+        /// <summary>
+        /// 前のTickの比率
+        /// </summary>
+        double OldCoef = 1.0; 
         MyQueue Queue = new MyQueue();
 
 
@@ -163,43 +183,59 @@ namespace Media3Project
 
 
             //Midiの参照
+            
+                // ポートの指定
+                MyMidiOutPort = new MyMidiOutPort(new MidiOutPort(0));
+                Console.WriteLine(MyMidiOutPort.IsOpen);
 
-            // ポートの指定
-            MyMidiOutPort = new MyMidiOutPort(new MidiOutPort(0));
-            Console.WriteLine(MyMidiOutPort.IsOpen);
+                // 指定したポートを開く
+                try
+                {
+                    MyMidiOutPort.Open();
+                }
+                catch
+                {
+                    Console.WriteLine("no such port exists");
+                    return;
+                }
+                // ファイルパスの指定
+                //            string path = "test.mid";
+                string path = "C:\\Users\\media3\\Downloads\\DQ.mid";
+                if (!File.Exists(path))
+                {
+                    Console.WriteLine("File dose not exist");
+                    return;
+                }
+                // midiファイルの読み込み
+                MidiData = MidiReader.ReadFrom(path, Encoding.GetEncoding("shift-jis"));
+                MidiFileDomain domain = new MidiFileDomain(MidiData);
 
-            // 指定したポートを開く
-            try
-            {
-                MyMidiOutPort.Open();
+                //曲に使われている楽器を5つのグループに分ける
+                MakeGroup();
+
+                //原曲のTickとGateを一次元配列に格納
+                Store();
+
+                // Playerの作成
+                Player = new MidiPlayer(MyMidiOutPort);
+                Player.Stopped += Player_Stopped;
+                // 別スレッドでの演奏開始
+
+                Player.Play(domain);
             }
-            catch
+        /// <summary>
+        /// 原曲のTickGateを一次元配列に格納
+        /// </summary>
+        void Store()
+        {
+            foreach (var track in MidiData.Tracks)
             {
-                Console.WriteLine("no such port exists");
-                return;
+                foreach (var note in track.GetData<NoteEvent>())
+                {
+                    tick_org.Add(note.Tick);
+                    gate_org.Add(note.Gate);
+                }
             }
-            // ファイルパスの指定
-            //            string path = "test.mid";
-            string path = "C:\\Users\\media3\\Downloads\\DQ.mid";
-            if (!File.Exists(path))
-            {
-                Console.WriteLine("File dose not exist");
-                return;
-            }
-            // midiファイルの読み込み
-            MidiData = MidiReader.ReadFrom(path, Encoding.GetEncoding("shift-jis"));
-            MidiFileDomain domain = new MidiFileDomain(MidiData);
-
-            //曲に使われている楽器を5つのグループに分ける
-            MakeGroup();
-            //CheckStrument();
-
-            // Playerの作成
-            Player = new MidiPlayer(MyMidiOutPort);
-            Player.Stopped += Player_Stopped;
-            // 別スレッドでの演奏開始
-            Player.Play(domain);
-
         }
 
         private void StartKinect(KinectSensor kinectSensor)
@@ -271,7 +307,6 @@ namespace Media3Project
                     float volume;
                     float tempo;
 
-                    //  Console.WriteLine("x:" + xarray[number]);
                     // Console.WriteLine("y:" + yarray[number]);
 
 
@@ -316,7 +351,7 @@ namespace Media3Project
                     meancount++;
                     // 100はマイナスにしないための初期値
                     // Volume_max = 100 + 200 * (yarray.Max() - skeleton.Joints[JointType.Head].Position.Y);
-                    Volume_max = 100 + 200 * (yarray.Max() - yarray.Min());
+                    Volume_max =  120 * (yarray.Max() - yarray.Min());
 
                     //if (number != 0)
                     //{
@@ -460,7 +495,7 @@ namespace Media3Project
                     if (skeleton.Joints[JointType.Head].Position.X < skeleton.Joints[JointType.HipCenter].Position.X - 0.1
                         && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
-                        Headposition=-0.08q;
+                        Headposition=-0.08;
                         Console.WriteLine("左側検出");
                         leftfrag = 1;
                         rightfrag = 0;
@@ -475,7 +510,7 @@ namespace Media3Project
                     }
                     else if (skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
-                        Console.WriteLine("正面検出");
+                       // Console.WriteLine("正面検出");
                         Headposition = 0;
                         leftfrag = 1;
                         rightfrag = 1;
@@ -493,17 +528,25 @@ namespace Media3Project
                         frame = skeletonFrame.FrameNumber;
                         tempo2[tempocount] = frame;
                         tempocount++;
+                        startfrag = 1;
+
                         if (tempocount > 1)
                         {
                             tempocount = 0;
                         }
 
                         tempo = Math.Abs(tempo2[0] - tempo2[1]);
-
+                        if (tempo > 40 && tempo < 100)
+                        {
+                            tickUpdated =  8*tempo;
+                        }
+                        Kinect_tempo_Change((double)tempo);
                         Console.WriteLine("tempo:" + tempo);
                         Console.WriteLine("volume:" + Volume_max);
                         DrawEllipse(kinect, FramePoint, 1);
                     }
+                   // Console.WriteLine("startfrag"+ startfrag);
+
                 }
             }
         }
@@ -626,13 +669,13 @@ namespace Media3Project
         /// <summary>
         /// テンポのアニメーション(反時計回り方向)
         /// </summary>
-        /// <param name="secTime">RightからLeftまでの移動時間(msec)</param>
+        /// <param name="millisecTime">RightからLeftまでの移動時間(msec)</param>
         /// <param name="Right"></param>
         /// <param name="Left"></param>
-        public void fromRighttoLeft(double secTime, double Right, double Left)
+        public void fromRighttoLeft(double millisecTime, double Right, double Left)
         {
             Storyboard storyboard = new Storyboard();
-            DoubleAnimation animation = new DoubleAnimation { From = Right, To = Left, Duration = new Duration(TimeSpan.FromSeconds(secTime)) };
+            DoubleAnimation animation = new DoubleAnimation { From = Right, To = Left, Duration = new Duration(TimeSpan.FromMilliseconds(millisecTime)) };
             animation.RepeatBehavior = new RepeatBehavior(1);
             storyboard.Completed += byLeft;
             Storyboard.SetTarget(animation, Tempo);
@@ -654,13 +697,13 @@ namespace Media3Project
         /// <summary>
         /// テンポのアニメーション(時計回り方向)
         /// </summary>
-        /// <param name="secTime">LeftからRightまでの移動時間(msec)</param>
+        /// <param name="millisecTime">LeftからRightまでの移動時間(msec)</param>
         /// <param name="Left"></param>
         /// <param name="Right"></param>
-        public void fromLefttoRight(double secTime, double Left, double Right)
+        public void fromLefttoRight(double millisecTime, double Left, double Right)
         {
             Storyboard storyboard = new Storyboard();
-            DoubleAnimation animation = new DoubleAnimation { From = Left, To = Right, Duration = new Duration(TimeSpan.FromSeconds(secTime)) };
+            DoubleAnimation animation = new DoubleAnimation { From = Left, To = Right, Duration = new Duration(TimeSpan.FromMilliseconds(millisecTime)) };
             animation.RepeatBehavior = new RepeatBehavior(1);
             storyboard.Completed += byRight;
             Storyboard.SetTarget(animation, Tempo);
@@ -768,9 +811,9 @@ namespace Media3Project
             {
                 if (leftflag == 0 && rightflag == 0)
                 {
-                    MyMidiOutPort.deltaVelocity0 = (volume - 100) * 10;
-                    MyMidiOutPort.deltaVelocity1 = (volume - 100) * 10;
-                    MyMidiOutPort.deltaVelocity2 = (volume - 100) * 10;
+                    MyMidiOutPort.deltaVelocity0 = volume -60;
+                    MyMidiOutPort.deltaVelocity1 = volume -60; 
+                    MyMidiOutPort.deltaVelocity2 = volume -60;
                 }
                 else if (leftflag == 1 && rightflag == 0)
                 {
@@ -784,6 +827,32 @@ namespace Media3Project
                 {
                     MyMidiOutPort.deltaVelocity0 = (volume - 100) * 10;
                 }
+            }
+        }
+
+        private void Kinect_tempo_Change(double tempo)
+        {
+            if (MyMidiOutPort != null)
+            {
+                int index = 0;
+                Coef = tempo / 60;
+                if(Coef-OldCoef>0.3) Coef = OldCoef + 0.3;
+
+                if (Coef - OldCoef < -0.3) Coef = OldCoef - 0.3;
+
+                foreach (var track in MidiData.Tracks)
+                {
+                    foreach (var note in track.GetData<NoteEvent>())
+                    {
+                        if (Player.Tick < note.Tick)
+                        {
+                            note.Tick = (int)((double)(tick_org[index] - Player.Tick) * Coef + Player.Tick);
+                            note.Gate = (int)((double)gate_org[index] * Coef);
+                        }
+                        index++;
+                    }
+                }
+                OldCoef = Coef;
             }
         }
     }
