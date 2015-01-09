@@ -327,9 +327,6 @@ namespace Media3Project
 
             // スケルトンの座標を、RGBカメラの座標に変換する
             ColorImagePoint point = kinect.CoordinateMapper.MapSkeletonPointToColorPoint(position, kinect.ColorStream.Format);
-            //var point = new Point();
-            //// 座標を画面のサイズに変換する
-            //point = SkeletonPointToScreen(kinect, position);
             point.X = (int)ScaleTo(point.X, kinect.ColorStream.FrameWidth, canvas1.Width);
             point.Y = (int)ScaleTo(point.Y, kinect.ColorStream.FrameHeight, canvas1.Height);
             //            canvas1.Children.Clear();
