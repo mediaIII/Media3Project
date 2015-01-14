@@ -45,84 +45,53 @@ namespace Media3Project
         /// <summary>
         /// tickの更新用
         /// </summary>
-        public static double tickUpdated = 1;
-        /// <summary>
-        /// ???
-        /// </summary>
-        const double Degree = 50;
+        public static double tickUpdated = 1000;
         int number = 1;
-        float[] xarray = new float[75];
-        float[] yarray = new float[75];
-        float[] grad = new float[100];
-        int maxtemponumber;
         /// <summary>
-        /// 特徴点のx,y座標
+        /// 右腕のy座標を入れるための配列
         /// </summary>
-        float[] featureX = new float[100];
-        float[] featureY = new float[100];
-        /// <summary>
-        /// 特徴点のカウント
-        /// </summary>
-        int featurecount = 0;
+        float[] YofRighthand = new float[75];
         /// <summary>
         /// テンポ用配列
         /// </summary>
         float[] tempoarray = new float[100];
-        // フレーム数
-        public int flamenum = 0;
-        // 計算用の配列
-        /// <summary>
-        /// 平均値計算用のカウント(3点取り出す)
-        /// </summary>
-        int meancount = 0;
-        /// <summary>
-        /// 平均値のx,y座標
-        /// </summary>
-        float[] xmean = new float[100];
-        float[] ymean = new float[100];
         float Volume_max;
         float frame;
-        float[] betweentempo = new float[100];
-        float[] maxtempo = new float[2];
-        float[] TotalDistance = new float[75];
-        float[] tempo2 = new float[2];
-        float rate;
-        int tempocount = 0;
-        int maxtempocount = 0;
-        int startfrag = 0;
+        /// <summary>
+        /// テンポを計算する用の配列
+        /// </summary>
+        float[] TimeBetweenPoints = new float[2];
+        /// <summary>
+        /// テンポを計算するためのカウンタ
+        /// </summary>
+        int TempoCount = 0;
+        /// <summary>
+        /// 頭の位置の誤差値
+        /// </summary>
         double Headposition = 0;
-        float[] ytempoarray = new float[100];
-        StreamWriter w = new StreamWriter("kekka.txt");
-        /// <summary>
-        /// 平均値の数
-        /// </summary>
-        int meannum = 0;
-        /// <summary>
-        /// 2直線の角度
-        /// </summary>
-        float angleBetween;
-        /// <summary>
-        ///  特徴点の５フレーム以内は特徴点を検出しない
-        /// </summary>
-        int FrameDetect = 30;
         /// <summary>
         /// 左側検出
         /// </summary>
-        int leftfrag = 0;
+        int leftflag = 0;
         /// <summary>
         /// 右側検出
         /// </summary>
-        int rightfrag = 0;
+        int rightflag = 0;
         /// <summary>
-        /// 
+        /// modifydata追加済みのMidiOutPort
         /// </summary>
-        int InitialCount = 0;
-        /// <summary>
-        /// 初期位置を判定するときの誤差
-        /// </summary>
-        float BaseDirection;
         MyMidiOutPort MyMidiOutPort;
+        /// <summary>
+        /// Midiの格納先
+        /// </summary>
         MidiData MidiData;
+        /// <summary>
+        /// Midiのデータ境界
+        /// </summary>
+        MidiFileDomain domain;
+        /// <summary>
+        /// Midiの演奏
+        /// </summary>
         MidiPlayer Player;
         /// <summary>
         /// グループ(パート)の配列
@@ -147,8 +116,15 @@ namespace Media3Project
         /// <summary>
         /// 前のTickの比率
         /// </summary>
-        double OldCoef = 1.0;
-        MyQueue Queue = new MyQueue();
+        double OldCoef = 1.0; 
+        /// <summary>
+        /// 右手の3フレーム分の座標を格納
+        /// </summary>
+        MyQueue RightHand = new MyQueue();
+        /// <summary>
+        /// 30フレーム間は動作しない
+        /// </summary>
+        int FrameDetect = 30;
 
 
         public MainWindow()
@@ -162,7 +138,37 @@ namespace Media3Project
         {
             // 図の初期化
             InitialzeFigure();
-            // ここからキネクトを記述
+            //Midiの参照
+            
+                // ポートの指定
+                MyMidiOutPort = new MyMidiOutPort(new MidiOutPort(0));
+
+                // 指定したポートを開く
+                try
+                {
+                    MyMidiOutPort.Open();
+        }
+                catch
+                {
+                    Console.WriteLine("no such port exists");
+                    return;
+                }
+                // ファイルパスの指定
+                string path = "C:\\Users\\media3\\Downloads\\DQ.mid";
+                if (!File.Exists(path))
+                {
+                    Console.WriteLine("File dose not exist");
+                    return;
+                }
+                // midiファイルの読み込み
+                MidiData = MidiReader.ReadFrom(path, Encoding.GetEncoding("shift-jis"));
+            domain = new MidiFileDomain(MidiData);
+
+                //曲に使われている楽器を5つのグループに分ける
+                MakeGroup();
+                //原曲のTickとGateを一次元配列に格納
+                Store();
+
             // Kinectが接続されているかどうかを確認する
             try
             {
@@ -181,47 +187,10 @@ namespace Media3Project
             }
 
 
-            //Midiの参照
-
-            // ポートの指定
-            MyMidiOutPort = new MyMidiOutPort(new MidiOutPort(0));
-            Console.WriteLine(MyMidiOutPort.IsOpen);
-
-            // 指定したポートを開く
-            try
-            {
-                MyMidiOutPort.Open();
+                // Playerの作成
+                Player = new MidiPlayer(MyMidiOutPort);
+                Player.Stopped += Player_Stopped;
             }
-            catch
-            {
-                Console.WriteLine("no such port exists");
-                return;
-            }
-            // ファイルパスの指定
-            //            string path = "test.mid";
-            string path = "C:\\Users\\media3\\Downloads\\DQ.mid";
-            if (!File.Exists(path))
-            {
-                Console.WriteLine("File dose not exist");
-                return;
-            }
-            // midiファイルの読み込み
-            MidiData = MidiReader.ReadFrom(path, Encoding.GetEncoding("shift-jis"));
-            MidiFileDomain domain = new MidiFileDomain(MidiData);
-
-            //曲に使われている楽器を5つのグループに分ける
-            MakeGroup();
-
-            //原曲のTickとGateを一次元配列に格納
-            Store();
-
-            // Playerの作成
-            Player = new MidiPlayer(MyMidiOutPort);
-            Player.Stopped += Player_Stopped;
-            // 別スレッドでの演奏開始
-
-            Player.Play(domain);
-        }
         /// <summary>
         /// 原曲のTickGateを一次元配列に格納
         /// </summary>
@@ -236,7 +205,10 @@ namespace Media3Project
                 }
             }
         }
-
+        /// <summary>
+        /// キネクトの開始
+        /// </summary>
+        /// <param name="kinectSensor"></param>
         private void StartKinect(KinectSensor kinectSensor)
         {
             kinectSensor.SkeletonStream.Enable();
@@ -266,7 +238,7 @@ namespace Media3Project
             }
         }
         /// <summary>
-        /// スケルトンから座標の取得, 計算
+        /// スケルトンから座標の取得, 計算(15Frame/sec)
         /// </summary>
         /// <param name="kinect"></param>
         /// <param name="skeletonFrame"></param>
@@ -281,135 +253,93 @@ namespace Media3Project
                 if (skeleton.TrackingState == SkeletonTrackingState.Tracked)
                 {
                     // ジョイントの座標の表示
-
-                    //１秒に１５フレーム表示
-                    // Console.WriteLine("FrameNumber:" + skeletonFrame.FrameNumber);
                     SkeletonPoint FramePoint;
 
                     number++;
+                    //　指揮一周分(約75こ分)のy座標を配列に入れる
                     number = number % 75;
 
-                    xarray[number] = skeleton.Joints[JointType.HandRight].Position.X;
-                    yarray[number] = skeleton.Joints[JointType.HandRight].Position.Y;
-                    // x,yの右手の座標
+                    YofRighthand[number] = skeleton.Joints[JointType.HandRight].Position.Y;
+                    // 右手のx,y座標
                     FramePoint = skeleton.Joints[JointType.HandRight].Position;
 
                     float tempo;
 
-                    if (meancount > 2 && number > 2)
-                    {
-                        xmean[meannum] = (xarray[number] + xarray[number - 1] + xarray[number - 2]) / 3;
-                        ymean[meannum] = (yarray[number] + yarray[number - 1] + yarray[number - 2]) / 3;
-                        meannum++;
-                        meannum = meannum % 100;
-                        meancount = 0;
-                    }
+                    RightHand.Add(skeleton.Joints[JointType.HandRight].Position.X);
 
+                    // ????
+                    Volume_max = 120 * (YofRighthand.Max() - YofRighthand.Min());
 
-                    Queue.Add(skeleton.Joints[JointType.HandRight].Position.X);
-                    meancount++;
-
-                    // 100はマイナスにしないための初期値
-                    // Volume_max = 100 + 200 * (yarray.Max() - skeleton.Joints[JointType.Head].Position.Y);
-                    Volume_max = 120 * (yarray.Max() - yarray.Min());
-
-                    if (flamenum < 10)
-                    {
-                        flamenum++;
-                    }
-                    else
-                    {
-                        flamenum = 0;
-                    }
+                    VolumeChange((double)Volume_max);
+                    Kinect_Volume_Change(leftflag, rightflag, (int)Volume_max);
 
 
                     if (skeleton.Joints[JointType.Head].Position.X < skeleton.Joints[JointType.HipCenter].Position.X - 0.1
                         && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
+                        // 左側検出
                         Headposition = -0.08;
-                        leftfrag = 1;
-                        rightfrag = 0;
+                        leftflag = 1;
+                        rightflag = 0;
+                        DrawEllipseOnDisplay(InstrumentLeft);
+                        
                     }
                     else if (skeleton.Joints[JointType.Head].Position.X > skeleton.Joints[JointType.HipCenter].Position.X + 0.1
                         && skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
+                        // 右側検出
                         Headposition = 0.05;
-                        rightfrag = 1;
-                        leftfrag = 0;
+                        rightflag = 1;
+                        leftflag = 0;
+                        DrawEllipseOnDisplay(InstrumentRight);
                     }
                     else if (skeleton.Joints[JointType.Head].Position.Z < skeleton.Joints[JointType.HipCenter].Position.Z - 0.1)
                     {
+                        // 正面検出
                         Headposition = 0;
-                        leftfrag = 1;
-                        rightfrag = 1;
+                        leftflag = 1;
+                        rightflag = 1;
+                        DrawEllipseOnDisplay(InstrumentCenter);
                     }
                     else
                     {
+                        // 基本位置
                         Headposition = 0;
-                        leftfrag = 0;
-                        rightfrag = 0;
+                        leftflag = 0;
+                        rightflag = 0;
+                        DrawEllipseOnDisplay(InstrumentStandard);
                     }
 
                     if (skeleton.Joints[JointType.HandRight].Position.X < (skeleton.Joints[JointType.Head].Position.X + Headposition)
-                           && Queue.Fetch(0) > Queue.Fetch(1) && Queue.Fetch(1) < Queue.Fetch(2) && frame + FrameDetect < skeletonFrame.FrameNumber)
+                           && RightHand.Fetch(0) > RightHand.Fetch(1) && RightHand.Fetch(1) < RightHand.Fetch(2) && frame + FrameDetect < skeletonFrame.FrameNumber)
                     {
                         frame = skeletonFrame.FrameNumber;
-                        tempo2[tempocount] = frame;
-                        tempocount++;
-                        startfrag = 1;
+                        
+                        TimeBetweenPoints[TempoCount] = frame;
+                        TempoCount++;
 
-                        if (tempocount > 1)
+                        if (TempoCount > 1)
                         {
-                            tempocount = 0;
+                            TempoCount = 0;
                         }
 
-                        tempo = Math.Abs(tempo2[0] - tempo2[1]);
+                        tempo = Math.Abs(TimeBetweenPoints[0] - TimeBetweenPoints[1]);
                         if (tempo > 40 && tempo < 100)
                         {
                             tickUpdated = 8 * tempo;
                         }
                         Kinect_tempo_Change((double)tempo);
-                        Console.WriteLine("tempo:" + tempo);
-                        Console.WriteLine("volume:" + Volume_max);
-                        DrawEllipse(kinect, FramePoint, 1);
-                    }
-                }
+        }
+            }
             }
         }
 
-        private void DrawEllipse(KinectSensor kinect, SkeletonPoint position, int flag)
+        private void DrawEllipseOnDisplay(Ellipse Instrument)
         {
-            const int R = 7;
-
-            // スケルトンの座標を、RGBカメラの座標に変換する
-            ColorImagePoint point = kinect.CoordinateMapper.MapSkeletonPointToColorPoint(position, kinect.ColorStream.Format);
-            point.X = (int)ScaleTo(point.X, kinect.ColorStream.FrameWidth, canvas1.Width);
-            point.Y = (int)ScaleTo(point.Y, kinect.ColorStream.FrameHeight, canvas1.Height);
-            //            canvas1.Children.Clear();
-            // 円を描く
-            Ellipse ellipse = new Ellipse();
-            if (flag == 1)
-            {
-                ellipse.Fill = new SolidColorBrush(Colors.Blue);
-                ellipse.Margin = new Thickness(point.X - R, point.Y - R, 0, 0);
-                ellipse.Width = R * 2;
-                ellipse.Height = R * 2;
-            }
-            else
-            {
-                ellipse.Fill = new SolidColorBrush(Colors.Red);
-                ellipse.Margin = new Thickness(point.X - 2, point.Y - 2, 0, 0);
-                ellipse.Width = 2 * 2;
-                ellipse.Height = 2 * 2;
-            }
-            canvas1.Children.Add(ellipse);
+            Canvas.Children.Clear();
+            Instrument.Fill = new SolidColorBrush(Colors.Yellow);
+            Canvas.Children.Add(Instrument);
         }
-
-        double ScaleTo(double value, double source, double dest)
-        {
-            return (value * dest) / source;
-        }
-
         /// <summary>
         /// Kinectの動作を停止する
         /// </summary>
@@ -423,13 +353,11 @@ namespace Media3Project
                     // スケルトンのフレーム更新イベントを削除する
                     kinect.SkeletonFrameReady -= kinectSensor_SkeletonFrameReady;
                     // Kinectの停止と、ネイティブリソースを解放する
-                    w.Close();
                     kinect.Stop();
                     kinect.Dispose();
                 }
             }
         }
-
         /// <summary>
         /// Windowが閉じられるときのイベント
         /// </summary>
@@ -439,38 +367,18 @@ namespace Media3Project
         {
             StopKinect(KinectSensor.KinectSensors[0]);
         }
-
         /// <summary>
         /// 図形の初期化
         /// </summary>
         private void InitialzeFigure()
         {
+            // ボリューム値の表示の初期化
             Volume.Height = Volume.MinHeight;
-            // テストスライダーはデバッグ用
-            TestSlider.Value = 0;
             // 回転中心の初期化
             Tempo.RenderTransformOrigin = new Point(0.5, 1.0);
             // テンポ角の初期化
             Tempo.RenderTransform = new RotateTransform(0);
         }
-
-
-        public void Slider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            // 12 は調整用の係数
-            VolumeChange(TestSlider.Value * 12);
-        }
-
-        /// <summary>
-        /// デバッグ用ボタン
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-            fromRighttoLeft(0.1, MinAngle, MaxAngle);
-        }
-
         /// <summary>
         /// ボリュームのアニメーション
         /// </summary>
@@ -487,7 +395,6 @@ namespace Media3Project
             storyboard.Children.Add(animation);
             storyboard.Begin();
         }
-
         /// <summary>
         /// テンポのアニメーション(反時計回り方向)
         /// </summary>
@@ -544,16 +451,6 @@ namespace Media3Project
             fromRighttoLeft(tickUpdated, MinAngle, MaxAngle);
         }
 
-        private void TempoSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            tickUpdated = TempoSlider.Value;
-        }
-
-        private void clear_Click(object sender, RoutedEventArgs e)
-        {
-            canvas1.Children.Clear();
-        }
-
         /// <summary>
         /// [note.value]番目にnote.valueの楽器がどのグループに入るか0〜4の数字が入った配列をつくる
         /// </summary>
@@ -568,37 +465,31 @@ namespace Media3Project
                     {
                         group[note.Value] = 0;
                         value[(int)note.Channel] = note.Value;
-                        Console.WriteLine("strument{0} group{1}", note.Value, group[note.Value]);
                     }
                     //8?15, 108, 112?119番の楽器番号ならパート1
                     if ((8 <= note.Value && note.Value <= 15) || (112 <= note.Value && note.Value <= 119) || note.Value == 108)
                     {
                         group[note.Value] = 1;
                         value[(int)note.Channel] = note.Value;
-                        Console.WriteLine("strument{0} group{1}", note.Value, group[note.Value]);
                     }
                     //24?55, 104?107, 110番の楽器番号ならパート2
                     if ((24 <= note.Value && note.Value <= 55) || (104 <= note.Value && note.Value <= 107) || note.Value == 110)
                     {
                         group[note.Value] = 2;
                         value[(int)note.Channel] = note.Value;
-                        Console.WriteLine("strument{0} group{1}", note.Value, group[note.Value]);
                     }
                     //56?79, 109, 111番の楽器番号ならパート3
                     if ((56 <= note.Value && note.Value <= 79) || note.Value == 109 || note.Value == 111)
                     {
                         group[note.Value] = 3;
                         value[(int)note.Channel] = note.Value;
-                        Console.WriteLine("strument{0} group{1}", note.Value, group[note.Value]);
                     }
                     //80〜103,120?127番の楽器番号ならパート4
                     if ((80 <= note.Value && note.Value <= 103) || (120 <= note.Value && note.Value <= 127))
                     {
                         group[note.Value] = 4;
                         value[(int)note.Channel] = note.Value;
-                        Console.WriteLine("strument{0} group{1}", note.Value, group[note.Value]);
                     }
-
                 }
             }
         }
@@ -616,7 +507,11 @@ namespace Media3Project
                 }
             }
         }
-
+        /// <summary>
+        /// プレイヤー停止時に発生
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         void Player_Stopped(object sender, EventArgs e)
         {
             MyMidiOutPort.Close();
@@ -651,7 +546,10 @@ namespace Media3Project
                 }
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="tempo"></param>
         private void Kinect_tempo_Change(double tempo)
         {
             if (MyMidiOutPort != null)
@@ -676,6 +574,17 @@ namespace Media3Project
                 }
                 OldCoef = Coef;
             }
+        }
+        /// <summary>
+        /// プレイヤーのスタート, テンポ棒の動作開始
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void Start_Button(object sender, RoutedEventArgs e)
+        {
+            // 別スレッドでの演奏開始
+            Player.Play(domain);
+            fromRighttoLeft(tickUpdated, MinAngle, MaxAngle);
         }
     }
     /// <summary>
