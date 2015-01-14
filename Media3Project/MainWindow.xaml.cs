@@ -52,7 +52,7 @@ namespace Media3Project
         /// 右腕のy座標を入れるための配列
         /// </summary>
         float[] YofRighthand = new float[75];
-       /// <summary>
+        /// <summary>
         /// テンポ用配列
         /// </summary>
         float[] tempoarray = new float[100];
@@ -117,7 +117,7 @@ namespace Media3Project
         /// <summary>
         /// 前のTickの比率
         /// </summary>
-        double OldCoef = 1.0;
+        double OldCoef = 1.0; 
         /// <summary>
         /// 右手の3フレーム分の座標を格納
         /// </summary>
@@ -140,35 +140,35 @@ namespace Media3Project
             // 図の初期化
             InitialzeFigure();
             //Midiの参照
+            
+                // ポートの指定
+                MyMidiOutPort = new MyMidiOutPort(new MidiOutPort(0));
 
-            // ポートの指定
-            MyMidiOutPort = new MyMidiOutPort(new MidiOutPort(0));
-
-            // 指定したポートを開く
-            try
-            {
-                MyMidiOutPort.Open();
-            }
-            catch
-            {
-                Console.WriteLine("no such port exists");
-                return;
-            }
-            // ファイルパスの指定
-            string path = "C:\\Users\\media3\\Downloads\\DQ.mid";
-            if (!File.Exists(path))
-            {
-                Console.WriteLine("File dose not exist");
-                return;
-            }
-            // midiファイルの読み込み
-            MidiData = MidiReader.ReadFrom(path, Encoding.GetEncoding("shift-jis"));
+                // 指定したポートを開く
+                try
+                {
+                    MyMidiOutPort.Open();
+                }
+                catch
+                {
+                    Console.WriteLine("no such port exists");
+                    return;
+                }
+                // ファイルパスの指定
+                string path = "C:\\Users\\media3\\Downloads\\DQ.mid";
+                if (!File.Exists(path))
+                {
+                    Console.WriteLine("File dose not exist");
+                    return;
+                }
+                // midiファイルの読み込み
+                MidiData = MidiReader.ReadFrom(path, Encoding.GetEncoding("shift-jis"));
             domain = new MidiFileDomain(MidiData);
 
-            //曲に使われている楽器を5つのグループに分ける
-            MakeGroup();
-            //原曲のTickとGateを一次元配列に格納
-            Store();
+                //曲に使われている楽器を5つのグループに分ける
+                MakeGroup();
+                //原曲のTickとGateを一次元配列に格納
+                Store();
 
             // Kinectが接続されているかどうかを確認する
             try
@@ -188,10 +188,10 @@ namespace Media3Project
             }
 
 
-            // Playerの作成
-            Player = new MidiPlayer(MyMidiOutPort);
-            Player.Stopped += Player_Stopped;
-        }
+                // Playerの作成
+                Player = new MidiPlayer(MyMidiOutPort);
+                Player.Stopped += Player_Stopped;
+            }
         /// <summary>
         /// 原曲のTickGateを一次元配列に格納
         /// </summary>
@@ -270,7 +270,7 @@ namespace Media3Project
 
                     // ????
                     Volume_max = 120 * (YofRighthand.Max() - YofRighthand.Min());
-                    
+
                     VolumeChange((double)Volume_max);
                     Kinect_Volume_Change(leftflag, rightflag, (int)Volume_max);
 
