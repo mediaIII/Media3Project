@@ -7,9 +7,6 @@
         </Border>
         <Label Content="tempo" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="331,301,0,0"/>
         <Label Content="volume" HorizontalAlignment="Left" Margin="200,300,0,0" VerticalAlignment="Top"/>
-        <Ellipse Name="Inst1" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="45" Margin="472,300,0,0" Stroke="Black" VerticalAlignment="Top" Width="45"/>
-        <Ellipse Name="Inst2" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="45" Margin="278,244,0,0" Stroke="Black" VerticalAlignment="Top" Width="45"/>
-        <Ellipse Name="Inst3" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="45" Margin="71,300,0,0" Stroke="Black" VerticalAlignment="Top" Width="45" RenderTransformOrigin="1.175,-0.356"/>
         <Rectangle Name="Tempo" Fill="Black" HorizontalAlignment="Left" Height="120" Margin="345,0,0,0.667" Stroke="Black" VerticalAlignment="Bottom" Width="1"  RenderTransformOrigin="0.5,1.0">
             <Rectangle.RenderTransform>
                 <TransformGroup>
@@ -21,11 +18,16 @@
             </Rectangle.RenderTransform>
         </Rectangle>
         <Rectangle Name="Volume" Fill="#00FF00" HorizontalAlignment="Left" Height="134" Margin="213,0,0,-0.333" Stroke="White" VerticalAlignment="Bottom" Width="25"/>
-        <Button Content="Button" HorizontalAlignment="Left" Margin="48,428,0,17.667" Width="75" Click="Button_Click"/>
-        <Slider Name="TestSlider" HorizontalAlignment="Left" Margin="41,368,0,0" VerticalAlignment="Top" Height="20" Width="82" ValueChanged="Slider_ValueChanged"
-               Value="1" />
-        <Slider Name="TempoSlider" HorizontalAlignment="Left" Height="30" Margin="48,393,0,0" VerticalAlignment="Top" Width="75" Maximum="5000" Minimum="100" TickFrequency="100" ValueChanged="TempoSlider_ValueChanged"/>
-        <Canvas Name="canvas1" HorizontalAlignment="Left" Height="229" Margin="10,10,0,0" VerticalAlignment="Top" Width="572"/>
-        <Button Name="ClearButton" Content="clear" HorizontalAlignment="Left" Height="36" Margin="472,387,0,0" VerticalAlignment="Top" Width="45" Click="clear_Click"/>
+        <Canvas Name="Canvas" HorizontalAlignment="Left" Height="229" Margin="10,71,0,0" VerticalAlignment="Top" Width="572">
+            <Ellipse x:Name="InstrumentLeft" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="45" Stroke="Black" VerticalAlignment="Top" Width="45" Canvas.Left="66" Canvas.Top="135"/>
+            <Ellipse x:Name="InstrumentCenter" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="45" Stroke="Black" VerticalAlignment="Top" Width="45" Canvas.Left="256" Canvas.Top="71"/>
+            <Ellipse x:Name="InstrumentStandard" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="45" Stroke="Black" VerticalAlignment="Top" Width="45" Canvas.Left="256" Canvas.Top="151"/>
+            <Ellipse x:Name="InstrumentRight" Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="45" Stroke="Black" VerticalAlignment="Top" Width="45" Canvas.Left="458" Canvas.Top="136"/>
+        </Canvas>
+        <Label Content="Left" Margin="81,258,469,178"/>
+        <Label Content="Center" Margin="263,192,271,242"/>
+        <Label Content="Right" Width="45" Margin="470,257,77,178"/>
+        <Label Content="Standard" Margin="258,271,261,166"/>
+        <Button Content="Start" HorizontalAlignment="Left" Height="39" Margin="48,367,0,0" VerticalAlignment="Top" Width="75" Click="Start_Button"/>
     </Grid>
 </Window>
